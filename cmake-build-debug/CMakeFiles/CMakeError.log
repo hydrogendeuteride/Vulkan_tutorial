@@ -1,0 +1,1296 @@
+Performing C SOURCE FILE Test CHECK_CPU_ARCHITECTURE_X86 failed with the following output:
+Change Dir: /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-ePVhn2
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_b4c9d/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_b4c9d.dir/build.make CMakeFiles/cmTC_b4c9d.dir/build
+gmake[1]: Entering directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-ePVhn2'
+Building C object CMakeFiles/cmTC_b4c9d.dir/src.c.o
+/usr/bin/cc -DCHECK_CPU_ARCHITECTURE_X86  -fdiagnostics-color=always -o CMakeFiles/cmTC_b4c9d.dir/src.c.o -c /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-ePVhn2/src.c
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-ePVhn2/src.c:[m[K In function '[01m[Kmain[m[K':
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-ePVhn2/src.c:6:3:[m[K [01;31m[Kerror: [m[K'[01m[Kchoke[m[K' undeclared (first use in this function)
+    6 |   [01;31m[Kchoke[m[K
+      |   [01;31m[K^~~~~[m[K
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-ePVhn2/src.c:6:3:[m[K [01;36m[Knote: [m[Keach undeclared identifier is reported only once for each function it appears in
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-ePVhn2/src.c:6:8:[m[K [01;31m[Kerror: [m[Kexpected '[01m[K;[m[K' before '[01m[K}[m[K' token
+    6 |   choke
+      |        [01;31m[K^[m[K
+      |        [32m[K;[m[K
+    7 | #endif
+    8 | [32m[K}[m[K
+      | [32m[K~[m[K       
+gmake[1]: *** [CMakeFiles/cmTC_b4c9d.dir/build.make:78: CMakeFiles/cmTC_b4c9d.dir/src.c.o] Error 1
+gmake[1]: Leaving directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-ePVhn2'
+gmake: *** [Makefile:127: cmTC_b4c9d/fast] Error 2
+
+
+Source file was:
+
+int main(int argc, char *argv[]) {
+#if defined(__i386__) || defined(__i486__) || defined(__i586__) || defined(__i686__) ||defined( __i386) || defined(_M_IX86)
+  return 0;
+#else
+  choke
+#endif
+}
+
+
+Performing C SOURCE FILE Test CHECK_CPU_ARCHITECTURE_ARM32 failed with the following output:
+Change Dir: /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-gRGYCx
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_75e62/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_75e62.dir/build.make CMakeFiles/cmTC_75e62.dir/build
+gmake[1]: Entering directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-gRGYCx'
+Building C object CMakeFiles/cmTC_75e62.dir/src.c.o
+/usr/bin/cc -DCHECK_CPU_ARCHITECTURE_ARM32  -fdiagnostics-color=always -o CMakeFiles/cmTC_75e62.dir/src.c.o -c /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-gRGYCx/src.c
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-gRGYCx/src.c:[m[K In function '[01m[Kmain[m[K':
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-gRGYCx/src.c:6:3:[m[K [01;31m[Kerror: [m[K'[01m[Kchoke[m[K' undeclared (first use in this function)
+    6 |   [01;31m[Kchoke[m[K
+      |   [01;31m[K^~~~~[m[K
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-gRGYCx/src.c:6:3:[m[K [01;36m[Knote: [m[Keach undeclared identifier is reported only once for each function it appears in
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-gRGYCx/src.c:6:8:[m[K [01;31m[Kerror: [m[Kexpected '[01m[K;[m[K' before '[01m[K}[m[K' token
+    6 |   choke
+      |        [01;31m[K^[m[K
+      |        [32m[K;[m[K
+    7 | #endif
+    8 | [32m[K}[m[K
+      | [32m[K~[m[K       
+gmake[1]: *** [CMakeFiles/cmTC_75e62.dir/build.make:78: CMakeFiles/cmTC_75e62.dir/src.c.o] Error 1
+gmake[1]: Leaving directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-gRGYCx'
+gmake: *** [Makefile:127: cmTC_75e62/fast] Error 2
+
+
+Source file was:
+
+int main(int argc, char *argv[]) {
+#if defined(__arm__) || defined(_M_ARM)
+  return 0;
+#else
+  choke
+#endif
+}
+
+
+Performing C SOURCE FILE Test CHECK_CPU_ARCHITECTURE_ARM64 failed with the following output:
+Change Dir: /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-PROK1I
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_1d449/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_1d449.dir/build.make CMakeFiles/cmTC_1d449.dir/build
+gmake[1]: Entering directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-PROK1I'
+Building C object CMakeFiles/cmTC_1d449.dir/src.c.o
+/usr/bin/cc -DCHECK_CPU_ARCHITECTURE_ARM64  -fdiagnostics-color=always -o CMakeFiles/cmTC_1d449.dir/src.c.o -c /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-PROK1I/src.c
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-PROK1I/src.c:[m[K In function '[01m[Kmain[m[K':
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-PROK1I/src.c:6:3:[m[K [01;31m[Kerror: [m[K'[01m[Kchoke[m[K' undeclared (first use in this function)
+    6 |   [01;31m[Kchoke[m[K
+      |   [01;31m[K^~~~~[m[K
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-PROK1I/src.c:6:3:[m[K [01;36m[Knote: [m[Keach undeclared identifier is reported only once for each function it appears in
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-PROK1I/src.c:6:8:[m[K [01;31m[Kerror: [m[Kexpected '[01m[K;[m[K' before '[01m[K}[m[K' token
+    6 |   choke
+      |        [01;31m[K^[m[K
+      |        [32m[K;[m[K
+    7 | #endif
+    8 | [32m[K}[m[K
+      | [32m[K~[m[K       
+gmake[1]: *** [CMakeFiles/cmTC_1d449.dir/build.make:78: CMakeFiles/cmTC_1d449.dir/src.c.o] Error 1
+gmake[1]: Leaving directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-PROK1I'
+gmake: *** [Makefile:127: cmTC_1d449/fast] Error 2
+
+
+Source file was:
+
+int main(int argc, char *argv[]) {
+#if defined(__aarch64__) || defined(_M_ARM64)
+  return 0;
+#else
+  choke
+#endif
+}
+
+
+Performing C SOURCE FILE Test CHECK_CPU_ARCHITECTURE_LOONGARCH64 failed with the following output:
+Change Dir: /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-iVrLmn
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_1daa2/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_1daa2.dir/build.make CMakeFiles/cmTC_1daa2.dir/build
+gmake[1]: Entering directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-iVrLmn'
+Building C object CMakeFiles/cmTC_1daa2.dir/src.c.o
+/usr/bin/cc -DCHECK_CPU_ARCHITECTURE_LOONGARCH64  -fdiagnostics-color=always -o CMakeFiles/cmTC_1daa2.dir/src.c.o -c /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-iVrLmn/src.c
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-iVrLmn/src.c:[m[K In function '[01m[Kmain[m[K':
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-iVrLmn/src.c:6:3:[m[K [01;31m[Kerror: [m[K'[01m[Kchoke[m[K' undeclared (first use in this function)
+    6 |   [01;31m[Kchoke[m[K
+      |   [01;31m[K^~~~~[m[K
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-iVrLmn/src.c:6:3:[m[K [01;36m[Knote: [m[Keach undeclared identifier is reported only once for each function it appears in
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-iVrLmn/src.c:6:8:[m[K [01;31m[Kerror: [m[Kexpected '[01m[K;[m[K' before '[01m[K}[m[K' token
+    6 |   choke
+      |        [01;31m[K^[m[K
+      |        [32m[K;[m[K
+    7 | #endif
+    8 | [32m[K}[m[K
+      | [32m[K~[m[K       
+gmake[1]: *** [CMakeFiles/cmTC_1daa2.dir/build.make:78: CMakeFiles/cmTC_1daa2.dir/src.c.o] Error 1
+gmake[1]: Leaving directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-iVrLmn'
+gmake: *** [Makefile:127: cmTC_1daa2/fast] Error 2
+
+
+Source file was:
+
+int main(int argc, char *argv[]) {
+#if defined(__loongarch64)
+  return 0;
+#else
+  choke
+#endif
+}
+
+
+Performing C SOURCE FILE Test HAVE_ALTIVEC_H_HDR failed with the following output:
+Change Dir: /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-iyn3Rp
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_6065e/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_6065e.dir/build.make CMakeFiles/cmTC_6065e.dir/build
+gmake[1]: Entering directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-iyn3Rp'
+Building C object CMakeFiles/cmTC_6065e.dir/src.c.o
+/usr/bin/cc -DHAVE_ALTIVEC_H_HDR  -idirafter "/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/third_party/SDL/src/video/khronos" -maltivec -fdiagnostics-color=always -o CMakeFiles/cmTC_6065e.dir/src.c.o -c /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-iyn3Rp/src.c
+[01m[Kcc:[m[K [01;31m[Kerror: [m[Kunrecognized command-line option '[01m[K-maltivec[m[K'
+gmake[1]: *** [CMakeFiles/cmTC_6065e.dir/build.make:78: CMakeFiles/cmTC_6065e.dir/src.c.o] Error 1
+gmake[1]: Leaving directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-iyn3Rp'
+gmake: *** [Makefile:127: cmTC_6065e/fast] Error 2
+
+
+Source file was:
+
+          #include <altivec.h>
+          vector unsigned int vzero() {
+              return vec_splat_u32(0);
+          }
+          int main(int argc, char **argv) { return 0; }
+
+Performing C SOURCE FILE Test CPU_SUPPORTS_ALTIVEC failed with the following output:
+Change Dir: /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-ln2kf0
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_f634a/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_f634a.dir/build.make CMakeFiles/cmTC_f634a.dir/build
+gmake[1]: Entering directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-ln2kf0'
+Building C object CMakeFiles/cmTC_f634a.dir/src.c.o
+/usr/bin/cc -DCPU_SUPPORTS_ALTIVEC  -idirafter "/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/third_party/SDL/src/video/khronos" -maltivec -fdiagnostics-color=always -o CMakeFiles/cmTC_f634a.dir/src.c.o -c /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-ln2kf0/src.c
+[01m[Kcc:[m[K [01;31m[Kerror: [m[Kunrecognized command-line option '[01m[K-maltivec[m[K'
+gmake[1]: *** [CMakeFiles/cmTC_f634a.dir/build.make:78: CMakeFiles/cmTC_f634a.dir/src.c.o] Error 1
+gmake[1]: Leaving directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-ln2kf0'
+gmake: *** [Makefile:127: cmTC_f634a/fast] Error 2
+
+
+Source file was:
+
+          vector unsigned int vzero() {
+              return vec_splat_u32(0);
+          }
+          int main(int argc, char **argv) { return 0; }
+
+Performing C SOURCE FILE Test CHECK_CPU_ARCHITECTURE_X86 failed with the following output:
+Change Dir: /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-oJbfid
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_ff074/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_ff074.dir/build.make CMakeFiles/cmTC_ff074.dir/build
+gmake[1]: Entering directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-oJbfid'
+Building C object CMakeFiles/cmTC_ff074.dir/src.c.o
+/usr/bin/cc -DCHECK_CPU_ARCHITECTURE_X86  -fdiagnostics-color=always -o CMakeFiles/cmTC_ff074.dir/src.c.o -c /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-oJbfid/src.c
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-oJbfid/src.c:[m[K In function '[01m[Kmain[m[K':
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-oJbfid/src.c:6:3:[m[K [01;31m[Kerror: [m[K'[01m[Kchoke[m[K' undeclared (first use in this function)
+    6 |   [01;31m[Kchoke[m[K
+      |   [01;31m[K^~~~~[m[K
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-oJbfid/src.c:6:3:[m[K [01;36m[Knote: [m[Keach undeclared identifier is reported only once for each function it appears in
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-oJbfid/src.c:6:8:[m[K [01;31m[Kerror: [m[Kexpected '[01m[K;[m[K' before '[01m[K}[m[K' token
+    6 |   choke
+      |        [01;31m[K^[m[K
+      |        [32m[K;[m[K
+    7 | #endif
+    8 | [32m[K}[m[K
+      | [32m[K~[m[K       
+gmake[1]: *** [CMakeFiles/cmTC_ff074.dir/build.make:78: CMakeFiles/cmTC_ff074.dir/src.c.o] Error 1
+gmake[1]: Leaving directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-oJbfid'
+gmake: *** [Makefile:127: cmTC_ff074/fast] Error 2
+
+
+Source file was:
+
+int main(int argc, char *argv[]) {
+#if defined(__i386__) || defined(__i486__) || defined(__i586__) || defined(__i686__) ||defined( __i386) || defined(_M_IX86)
+  return 0;
+#else
+  choke
+#endif
+}
+
+
+Performing C SOURCE FILE Test CHECK_CPU_ARCHITECTURE_ARM32 failed with the following output:
+Change Dir: /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-9PRlX8
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_bfdd5/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_bfdd5.dir/build.make CMakeFiles/cmTC_bfdd5.dir/build
+gmake[1]: Entering directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-9PRlX8'
+Building C object CMakeFiles/cmTC_bfdd5.dir/src.c.o
+/usr/bin/cc -DCHECK_CPU_ARCHITECTURE_ARM32  -fdiagnostics-color=always -o CMakeFiles/cmTC_bfdd5.dir/src.c.o -c /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-9PRlX8/src.c
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-9PRlX8/src.c:[m[K In function '[01m[Kmain[m[K':
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-9PRlX8/src.c:6:3:[m[K [01;31m[Kerror: [m[K'[01m[Kchoke[m[K' undeclared (first use in this function)
+    6 |   [01;31m[Kchoke[m[K
+      |   [01;31m[K^~~~~[m[K
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-9PRlX8/src.c:6:3:[m[K [01;36m[Knote: [m[Keach undeclared identifier is reported only once for each function it appears in
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-9PRlX8/src.c:6:8:[m[K [01;31m[Kerror: [m[Kexpected '[01m[K;[m[K' before '[01m[K}[m[K' token
+    6 |   choke
+      |        [01;31m[K^[m[K
+      |        [32m[K;[m[K
+    7 | #endif
+    8 | [32m[K}[m[K
+      | [32m[K~[m[K       
+gmake[1]: *** [CMakeFiles/cmTC_bfdd5.dir/build.make:78: CMakeFiles/cmTC_bfdd5.dir/src.c.o] Error 1
+gmake[1]: Leaving directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-9PRlX8'
+gmake: *** [Makefile:127: cmTC_bfdd5/fast] Error 2
+
+
+Source file was:
+
+int main(int argc, char *argv[]) {
+#if defined(__arm__) || defined(_M_ARM)
+  return 0;
+#else
+  choke
+#endif
+}
+
+
+Performing C SOURCE FILE Test CHECK_CPU_ARCHITECTURE_ARM64 failed with the following output:
+Change Dir: /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-Mgz6j0
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_b2cd7/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_b2cd7.dir/build.make CMakeFiles/cmTC_b2cd7.dir/build
+gmake[1]: Entering directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-Mgz6j0'
+Building C object CMakeFiles/cmTC_b2cd7.dir/src.c.o
+/usr/bin/cc -DCHECK_CPU_ARCHITECTURE_ARM64  -fdiagnostics-color=always -o CMakeFiles/cmTC_b2cd7.dir/src.c.o -c /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-Mgz6j0/src.c
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-Mgz6j0/src.c:[m[K In function '[01m[Kmain[m[K':
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-Mgz6j0/src.c:6:3:[m[K [01;31m[Kerror: [m[K'[01m[Kchoke[m[K' undeclared (first use in this function)
+    6 |   [01;31m[Kchoke[m[K
+      |   [01;31m[K^~~~~[m[K
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-Mgz6j0/src.c:6:3:[m[K [01;36m[Knote: [m[Keach undeclared identifier is reported only once for each function it appears in
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-Mgz6j0/src.c:6:8:[m[K [01;31m[Kerror: [m[Kexpected '[01m[K;[m[K' before '[01m[K}[m[K' token
+    6 |   choke
+      |        [01;31m[K^[m[K
+      |        [32m[K;[m[K
+    7 | #endif
+    8 | [32m[K}[m[K
+      | [32m[K~[m[K       
+gmake[1]: *** [CMakeFiles/cmTC_b2cd7.dir/build.make:78: CMakeFiles/cmTC_b2cd7.dir/src.c.o] Error 1
+gmake[1]: Leaving directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-Mgz6j0'
+gmake: *** [Makefile:127: cmTC_b2cd7/fast] Error 2
+
+
+Source file was:
+
+int main(int argc, char *argv[]) {
+#if defined(__aarch64__) || defined(_M_ARM64)
+  return 0;
+#else
+  choke
+#endif
+}
+
+
+Performing C SOURCE FILE Test CHECK_CPU_ARCHITECTURE_LOONGARCH64 failed with the following output:
+Change Dir: /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-evaU2s
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_1ed57/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_1ed57.dir/build.make CMakeFiles/cmTC_1ed57.dir/build
+gmake[1]: Entering directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-evaU2s'
+Building C object CMakeFiles/cmTC_1ed57.dir/src.c.o
+/usr/bin/cc -DCHECK_CPU_ARCHITECTURE_LOONGARCH64  -fdiagnostics-color=always -o CMakeFiles/cmTC_1ed57.dir/src.c.o -c /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-evaU2s/src.c
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-evaU2s/src.c:[m[K In function '[01m[Kmain[m[K':
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-evaU2s/src.c:6:3:[m[K [01;31m[Kerror: [m[K'[01m[Kchoke[m[K' undeclared (first use in this function)
+    6 |   [01;31m[Kchoke[m[K
+      |   [01;31m[K^~~~~[m[K
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-evaU2s/src.c:6:3:[m[K [01;36m[Knote: [m[Keach undeclared identifier is reported only once for each function it appears in
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-evaU2s/src.c:6:8:[m[K [01;31m[Kerror: [m[Kexpected '[01m[K;[m[K' before '[01m[K}[m[K' token
+    6 |   choke
+      |        [01;31m[K^[m[K
+      |        [32m[K;[m[K
+    7 | #endif
+    8 | [32m[K}[m[K
+      | [32m[K~[m[K       
+gmake[1]: *** [CMakeFiles/cmTC_1ed57.dir/build.make:78: CMakeFiles/cmTC_1ed57.dir/src.c.o] Error 1
+gmake[1]: Leaving directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-evaU2s'
+gmake: *** [Makefile:127: cmTC_1ed57/fast] Error 2
+
+
+Source file was:
+
+int main(int argc, char *argv[]) {
+#if defined(__loongarch64)
+  return 0;
+#else
+  choke
+#endif
+}
+
+
+Performing C SOURCE FILE Test HAVE_ALTIVEC_H_HDR failed with the following output:
+Change Dir: /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-UdMjIP
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_32322/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_32322.dir/build.make CMakeFiles/cmTC_32322.dir/build
+gmake[1]: Entering directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-UdMjIP'
+Building C object CMakeFiles/cmTC_32322.dir/src.c.o
+/usr/bin/cc -DHAVE_ALTIVEC_H_HDR  -idirafter "/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/third_party/SDL/src/video/khronos" -maltivec -fdiagnostics-color=always -o CMakeFiles/cmTC_32322.dir/src.c.o -c /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-UdMjIP/src.c
+[01m[Kcc:[m[K [01;31m[Kerror: [m[Kunrecognized command-line option '[01m[K-maltivec[m[K'
+gmake[1]: *** [CMakeFiles/cmTC_32322.dir/build.make:78: CMakeFiles/cmTC_32322.dir/src.c.o] Error 1
+gmake[1]: Leaving directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-UdMjIP'
+gmake: *** [Makefile:127: cmTC_32322/fast] Error 2
+
+
+Source file was:
+
+          #include <altivec.h>
+          vector unsigned int vzero() {
+              return vec_splat_u32(0);
+          }
+          int main(int argc, char **argv) { return 0; }
+
+Performing C SOURCE FILE Test CPU_SUPPORTS_ALTIVEC failed with the following output:
+Change Dir: /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-07iYG5
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_6b5b2/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_6b5b2.dir/build.make CMakeFiles/cmTC_6b5b2.dir/build
+gmake[1]: Entering directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-07iYG5'
+Building C object CMakeFiles/cmTC_6b5b2.dir/src.c.o
+/usr/bin/cc -DCPU_SUPPORTS_ALTIVEC  -idirafter "/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/third_party/SDL/src/video/khronos" -maltivec -fdiagnostics-color=always -o CMakeFiles/cmTC_6b5b2.dir/src.c.o -c /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-07iYG5/src.c
+[01m[Kcc:[m[K [01;31m[Kerror: [m[Kunrecognized command-line option '[01m[K-maltivec[m[K'
+gmake[1]: *** [CMakeFiles/cmTC_6b5b2.dir/build.make:78: CMakeFiles/cmTC_6b5b2.dir/src.c.o] Error 1
+gmake[1]: Leaving directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-07iYG5'
+gmake: *** [Makefile:127: cmTC_6b5b2/fast] Error 2
+
+
+Source file was:
+
+          vector unsigned int vzero() {
+              return vec_splat_u32(0);
+          }
+          int main(int argc, char **argv) { return 0; }
+
+Determining if the strlcpy exist failed with the following output:
+Change Dir: /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-ZcD2eE
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_437d2/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_437d2.dir/build.make CMakeFiles/cmTC_437d2.dir/build
+gmake[1]: Entering directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-ZcD2eE'
+Building C object CMakeFiles/cmTC_437d2.dir/CheckSymbolExists.c.o
+/usr/bin/cc   -idirafter "/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/third_party/SDL/src/video/khronos"  -D_GNU_SOURCE=1 -fdiagnostics-color=always -o CMakeFiles/cmTC_437d2.dir/CheckSymbolExists.c.o -c /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-ZcD2eE/CheckSymbolExists.c
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-ZcD2eE/CheckSymbolExists.c:[m[K In function '[01m[Kmain[m[K':
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-ZcD2eE/CheckSymbolExists.c:14:19:[m[K [01;31m[Kerror: [m[K'[01m[Kstrlcpy[m[K' undeclared (first use in this function); did you mean '[01m[Kstrncpy[m[K'?
+   14 |   return ((int*)(&[01;31m[Kstrlcpy[m[K))[argc];
+      |                   [01;31m[K^~~~~~~[m[K
+      |                   [32m[Kstrncpy[m[K
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-ZcD2eE/CheckSymbolExists.c:14:19:[m[K [01;36m[Knote: [m[Keach undeclared identifier is reported only once for each function it appears in
+gmake[1]: *** [CMakeFiles/cmTC_437d2.dir/build.make:78: CMakeFiles/cmTC_437d2.dir/CheckSymbolExists.c.o] Error 1
+gmake[1]: Leaving directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-ZcD2eE'
+gmake: *** [Makefile:127: cmTC_437d2/fast] Error 2
+
+
+File CheckSymbolExists.c:
+/* */
+#include <stddef.h>
+#include <stdarg.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include <wchar.h>
+#include <float.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef strlcpy
+  return ((int*)(&strlcpy))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+
+Determining if the strlcat exist failed with the following output:
+Change Dir: /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-FBYBOZ
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_2d6e1/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_2d6e1.dir/build.make CMakeFiles/cmTC_2d6e1.dir/build
+gmake[1]: Entering directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-FBYBOZ'
+Building C object CMakeFiles/cmTC_2d6e1.dir/CheckSymbolExists.c.o
+/usr/bin/cc   -idirafter "/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/third_party/SDL/src/video/khronos"  -D_GNU_SOURCE=1 -fdiagnostics-color=always -o CMakeFiles/cmTC_2d6e1.dir/CheckSymbolExists.c.o -c /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-FBYBOZ/CheckSymbolExists.c
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-FBYBOZ/CheckSymbolExists.c:[m[K In function '[01m[Kmain[m[K':
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-FBYBOZ/CheckSymbolExists.c:14:19:[m[K [01;31m[Kerror: [m[K'[01m[Kstrlcat[m[K' undeclared (first use in this function); did you mean '[01m[Kstrncat[m[K'?
+   14 |   return ((int*)(&[01;31m[Kstrlcat[m[K))[argc];
+      |                   [01;31m[K^~~~~~~[m[K
+      |                   [32m[Kstrncat[m[K
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-FBYBOZ/CheckSymbolExists.c:14:19:[m[K [01;36m[Knote: [m[Keach undeclared identifier is reported only once for each function it appears in
+gmake[1]: *** [CMakeFiles/cmTC_2d6e1.dir/build.make:78: CMakeFiles/cmTC_2d6e1.dir/CheckSymbolExists.c.o] Error 1
+gmake[1]: Leaving directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-FBYBOZ'
+gmake: *** [Makefile:127: cmTC_2d6e1/fast] Error 2
+
+
+File CheckSymbolExists.c:
+/* */
+#include <stddef.h>
+#include <stdarg.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include <wchar.h>
+#include <float.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef strlcat
+  return ((int*)(&strlcat))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+
+Determining if the _strrev exist failed with the following output:
+Change Dir: /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-eJ5Zn3
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_bdddb/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_bdddb.dir/build.make CMakeFiles/cmTC_bdddb.dir/build
+gmake[1]: Entering directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-eJ5Zn3'
+Building C object CMakeFiles/cmTC_bdddb.dir/CheckSymbolExists.c.o
+/usr/bin/cc   -idirafter "/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/third_party/SDL/src/video/khronos"  -D_GNU_SOURCE=1 -fdiagnostics-color=always -o CMakeFiles/cmTC_bdddb.dir/CheckSymbolExists.c.o -c /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-eJ5Zn3/CheckSymbolExists.c
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-eJ5Zn3/CheckSymbolExists.c:[m[K In function '[01m[Kmain[m[K':
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-eJ5Zn3/CheckSymbolExists.c:14:19:[m[K [01;31m[Kerror: [m[K'[01m[K_strrev[m[K' undeclared (first use in this function)
+   14 |   return ((int*)(&[01;31m[K_strrev[m[K))[argc];
+      |                   [01;31m[K^~~~~~~[m[K
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-eJ5Zn3/CheckSymbolExists.c:14:19:[m[K [01;36m[Knote: [m[Keach undeclared identifier is reported only once for each function it appears in
+gmake[1]: *** [CMakeFiles/cmTC_bdddb.dir/build.make:78: CMakeFiles/cmTC_bdddb.dir/CheckSymbolExists.c.o] Error 1
+gmake[1]: Leaving directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-eJ5Zn3'
+gmake: *** [Makefile:127: cmTC_bdddb/fast] Error 2
+
+
+File CheckSymbolExists.c:
+/* */
+#include <stddef.h>
+#include <stdarg.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include <wchar.h>
+#include <float.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef _strrev
+  return ((int*)(&_strrev))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+
+Determining if the _strupr exist failed with the following output:
+Change Dir: /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-lzXFQS
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_f7cd5/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_f7cd5.dir/build.make CMakeFiles/cmTC_f7cd5.dir/build
+gmake[1]: Entering directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-lzXFQS'
+Building C object CMakeFiles/cmTC_f7cd5.dir/CheckSymbolExists.c.o
+/usr/bin/cc   -idirafter "/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/third_party/SDL/src/video/khronos"  -D_GNU_SOURCE=1 -fdiagnostics-color=always -o CMakeFiles/cmTC_f7cd5.dir/CheckSymbolExists.c.o -c /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-lzXFQS/CheckSymbolExists.c
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-lzXFQS/CheckSymbolExists.c:[m[K In function '[01m[Kmain[m[K':
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-lzXFQS/CheckSymbolExists.c:14:19:[m[K [01;31m[Kerror: [m[K'[01m[K_strupr[m[K' undeclared (first use in this function)
+   14 |   return ((int*)(&[01;31m[K_strupr[m[K))[argc];
+      |                   [01;31m[K^~~~~~~[m[K
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-lzXFQS/CheckSymbolExists.c:14:19:[m[K [01;36m[Knote: [m[Keach undeclared identifier is reported only once for each function it appears in
+gmake[1]: *** [CMakeFiles/cmTC_f7cd5.dir/build.make:78: CMakeFiles/cmTC_f7cd5.dir/CheckSymbolExists.c.o] Error 1
+gmake[1]: Leaving directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-lzXFQS'
+gmake: *** [Makefile:127: cmTC_f7cd5/fast] Error 2
+
+
+File CheckSymbolExists.c:
+/* */
+#include <stddef.h>
+#include <stdarg.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include <wchar.h>
+#include <float.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef _strupr
+  return ((int*)(&_strupr))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+
+Determining if the _strlwr exist failed with the following output:
+Change Dir: /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-57J9PE
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_556e7/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_556e7.dir/build.make CMakeFiles/cmTC_556e7.dir/build
+gmake[1]: Entering directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-57J9PE'
+Building C object CMakeFiles/cmTC_556e7.dir/CheckSymbolExists.c.o
+/usr/bin/cc   -idirafter "/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/third_party/SDL/src/video/khronos"  -D_GNU_SOURCE=1 -fdiagnostics-color=always -o CMakeFiles/cmTC_556e7.dir/CheckSymbolExists.c.o -c /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-57J9PE/CheckSymbolExists.c
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-57J9PE/CheckSymbolExists.c:[m[K In function '[01m[Kmain[m[K':
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-57J9PE/CheckSymbolExists.c:14:19:[m[K [01;31m[Kerror: [m[K'[01m[K_strlwr[m[K' undeclared (first use in this function)
+   14 |   return ((int*)(&[01;31m[K_strlwr[m[K))[argc];
+      |                   [01;31m[K^~~~~~~[m[K
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-57J9PE/CheckSymbolExists.c:14:19:[m[K [01;36m[Knote: [m[Keach undeclared identifier is reported only once for each function it appears in
+gmake[1]: *** [CMakeFiles/cmTC_556e7.dir/build.make:78: CMakeFiles/cmTC_556e7.dir/CheckSymbolExists.c.o] Error 1
+gmake[1]: Leaving directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-57J9PE'
+gmake: *** [Makefile:127: cmTC_556e7/fast] Error 2
+
+
+File CheckSymbolExists.c:
+/* */
+#include <stddef.h>
+#include <stdarg.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include <wchar.h>
+#include <float.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef _strlwr
+  return ((int*)(&_strlwr))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+
+Determining if the itoa exist failed with the following output:
+Change Dir: /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-E78ndg
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_73128/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_73128.dir/build.make CMakeFiles/cmTC_73128.dir/build
+gmake[1]: Entering directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-E78ndg'
+Building C object CMakeFiles/cmTC_73128.dir/CheckSymbolExists.c.o
+/usr/bin/cc   -idirafter "/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/third_party/SDL/src/video/khronos"  -D_GNU_SOURCE=1 -fdiagnostics-color=always -o CMakeFiles/cmTC_73128.dir/CheckSymbolExists.c.o -c /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-E78ndg/CheckSymbolExists.c
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-E78ndg/CheckSymbolExists.c:[m[K In function '[01m[Kmain[m[K':
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-E78ndg/CheckSymbolExists.c:14:19:[m[K [01;31m[Kerror: [m[K'[01m[Kitoa[m[K' undeclared (first use in this function)
+   14 |   return ((int*)(&[01;31m[Kitoa[m[K))[argc];
+      |                   [01;31m[K^~~~[m[K
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-E78ndg/CheckSymbolExists.c:14:19:[m[K [01;36m[Knote: [m[Keach undeclared identifier is reported only once for each function it appears in
+gmake[1]: *** [CMakeFiles/cmTC_73128.dir/build.make:78: CMakeFiles/cmTC_73128.dir/CheckSymbolExists.c.o] Error 1
+gmake[1]: Leaving directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-E78ndg'
+gmake: *** [Makefile:127: cmTC_73128/fast] Error 2
+
+
+File CheckSymbolExists.c:
+/* */
+#include <stddef.h>
+#include <stdarg.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include <wchar.h>
+#include <float.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef itoa
+  return ((int*)(&itoa))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+
+Determining if the _ltoa exist failed with the following output:
+Change Dir: /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-gHw8fv
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_3ef4e/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_3ef4e.dir/build.make CMakeFiles/cmTC_3ef4e.dir/build
+gmake[1]: Entering directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-gHw8fv'
+Building C object CMakeFiles/cmTC_3ef4e.dir/CheckSymbolExists.c.o
+/usr/bin/cc   -idirafter "/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/third_party/SDL/src/video/khronos"  -D_GNU_SOURCE=1 -fdiagnostics-color=always -o CMakeFiles/cmTC_3ef4e.dir/CheckSymbolExists.c.o -c /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-gHw8fv/CheckSymbolExists.c
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-gHw8fv/CheckSymbolExists.c:[m[K In function '[01m[Kmain[m[K':
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-gHw8fv/CheckSymbolExists.c:14:19:[m[K [01;31m[Kerror: [m[K'[01m[K_ltoa[m[K' undeclared (first use in this function)
+   14 |   return ((int*)(&[01;31m[K_ltoa[m[K))[argc];
+      |                   [01;31m[K^~~~~[m[K
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-gHw8fv/CheckSymbolExists.c:14:19:[m[K [01;36m[Knote: [m[Keach undeclared identifier is reported only once for each function it appears in
+gmake[1]: *** [CMakeFiles/cmTC_3ef4e.dir/build.make:78: CMakeFiles/cmTC_3ef4e.dir/CheckSymbolExists.c.o] Error 1
+gmake[1]: Leaving directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-gHw8fv'
+gmake: *** [Makefile:127: cmTC_3ef4e/fast] Error 2
+
+
+File CheckSymbolExists.c:
+/* */
+#include <stddef.h>
+#include <stdarg.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include <wchar.h>
+#include <float.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef _ltoa
+  return ((int*)(&_ltoa))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+
+Determining if the _uitoa exist failed with the following output:
+Change Dir: /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-5nCNpY
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_81a52/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_81a52.dir/build.make CMakeFiles/cmTC_81a52.dir/build
+gmake[1]: Entering directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-5nCNpY'
+Building C object CMakeFiles/cmTC_81a52.dir/CheckSymbolExists.c.o
+/usr/bin/cc   -idirafter "/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/third_party/SDL/src/video/khronos"  -D_GNU_SOURCE=1 -fdiagnostics-color=always -o CMakeFiles/cmTC_81a52.dir/CheckSymbolExists.c.o -c /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-5nCNpY/CheckSymbolExists.c
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-5nCNpY/CheckSymbolExists.c:[m[K In function '[01m[Kmain[m[K':
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-5nCNpY/CheckSymbolExists.c:14:19:[m[K [01;31m[Kerror: [m[K'[01m[K_uitoa[m[K' undeclared (first use in this function)
+   14 |   return ((int*)(&[01;31m[K_uitoa[m[K))[argc];
+      |                   [01;31m[K^~~~~~[m[K
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-5nCNpY/CheckSymbolExists.c:14:19:[m[K [01;36m[Knote: [m[Keach undeclared identifier is reported only once for each function it appears in
+gmake[1]: *** [CMakeFiles/cmTC_81a52.dir/build.make:78: CMakeFiles/cmTC_81a52.dir/CheckSymbolExists.c.o] Error 1
+gmake[1]: Leaving directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-5nCNpY'
+gmake: *** [Makefile:127: cmTC_81a52/fast] Error 2
+
+
+File CheckSymbolExists.c:
+/* */
+#include <stddef.h>
+#include <stdarg.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include <wchar.h>
+#include <float.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef _uitoa
+  return ((int*)(&_uitoa))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+
+Determining if the _ultoa exist failed with the following output:
+Change Dir: /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-4vY4ex
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_4ce0c/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_4ce0c.dir/build.make CMakeFiles/cmTC_4ce0c.dir/build
+gmake[1]: Entering directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-4vY4ex'
+Building C object CMakeFiles/cmTC_4ce0c.dir/CheckSymbolExists.c.o
+/usr/bin/cc   -idirafter "/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/third_party/SDL/src/video/khronos"  -D_GNU_SOURCE=1 -fdiagnostics-color=always -o CMakeFiles/cmTC_4ce0c.dir/CheckSymbolExists.c.o -c /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-4vY4ex/CheckSymbolExists.c
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-4vY4ex/CheckSymbolExists.c:[m[K In function '[01m[Kmain[m[K':
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-4vY4ex/CheckSymbolExists.c:14:19:[m[K [01;31m[Kerror: [m[K'[01m[K_ultoa[m[K' undeclared (first use in this function)
+   14 |   return ((int*)(&[01;31m[K_ultoa[m[K))[argc];
+      |                   [01;31m[K^~~~~~[m[K
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-4vY4ex/CheckSymbolExists.c:14:19:[m[K [01;36m[Knote: [m[Keach undeclared identifier is reported only once for each function it appears in
+gmake[1]: *** [CMakeFiles/cmTC_4ce0c.dir/build.make:78: CMakeFiles/cmTC_4ce0c.dir/CheckSymbolExists.c.o] Error 1
+gmake[1]: Leaving directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-4vY4ex'
+gmake: *** [Makefile:127: cmTC_4ce0c/fast] Error 2
+
+
+File CheckSymbolExists.c:
+/* */
+#include <stddef.h>
+#include <stdarg.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include <wchar.h>
+#include <float.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef _ultoa
+  return ((int*)(&_ultoa))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+
+Determining if the _i64toa exist failed with the following output:
+Change Dir: /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-eSIarb
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_9aa1c/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_9aa1c.dir/build.make CMakeFiles/cmTC_9aa1c.dir/build
+gmake[1]: Entering directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-eSIarb'
+Building C object CMakeFiles/cmTC_9aa1c.dir/CheckSymbolExists.c.o
+/usr/bin/cc   -idirafter "/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/third_party/SDL/src/video/khronos"  -D_GNU_SOURCE=1 -fdiagnostics-color=always -o CMakeFiles/cmTC_9aa1c.dir/CheckSymbolExists.c.o -c /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-eSIarb/CheckSymbolExists.c
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-eSIarb/CheckSymbolExists.c:[m[K In function '[01m[Kmain[m[K':
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-eSIarb/CheckSymbolExists.c:14:19:[m[K [01;31m[Kerror: [m[K'[01m[K_i64toa[m[K' undeclared (first use in this function)
+   14 |   return ((int*)(&[01;31m[K_i64toa[m[K))[argc];
+      |                   [01;31m[K^~~~~~~[m[K
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-eSIarb/CheckSymbolExists.c:14:19:[m[K [01;36m[Knote: [m[Keach undeclared identifier is reported only once for each function it appears in
+gmake[1]: *** [CMakeFiles/cmTC_9aa1c.dir/build.make:78: CMakeFiles/cmTC_9aa1c.dir/CheckSymbolExists.c.o] Error 1
+gmake[1]: Leaving directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-eSIarb'
+gmake: *** [Makefile:127: cmTC_9aa1c/fast] Error 2
+
+
+File CheckSymbolExists.c:
+/* */
+#include <stddef.h>
+#include <stdarg.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include <wchar.h>
+#include <float.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef _i64toa
+  return ((int*)(&_i64toa))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+
+Determining if the _ui64toa exist failed with the following output:
+Change Dir: /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-ForJZZ
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_0bb15/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_0bb15.dir/build.make CMakeFiles/cmTC_0bb15.dir/build
+gmake[1]: Entering directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-ForJZZ'
+Building C object CMakeFiles/cmTC_0bb15.dir/CheckSymbolExists.c.o
+/usr/bin/cc   -idirafter "/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/third_party/SDL/src/video/khronos"  -D_GNU_SOURCE=1 -fdiagnostics-color=always -o CMakeFiles/cmTC_0bb15.dir/CheckSymbolExists.c.o -c /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-ForJZZ/CheckSymbolExists.c
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-ForJZZ/CheckSymbolExists.c:[m[K In function '[01m[Kmain[m[K':
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-ForJZZ/CheckSymbolExists.c:14:19:[m[K [01;31m[Kerror: [m[K'[01m[K_ui64toa[m[K' undeclared (first use in this function)
+   14 |   return ((int*)(&[01;31m[K_ui64toa[m[K))[argc];
+      |                   [01;31m[K^~~~~~~~[m[K
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-ForJZZ/CheckSymbolExists.c:14:19:[m[K [01;36m[Knote: [m[Keach undeclared identifier is reported only once for each function it appears in
+gmake[1]: *** [CMakeFiles/cmTC_0bb15.dir/build.make:78: CMakeFiles/cmTC_0bb15.dir/CheckSymbolExists.c.o] Error 1
+gmake[1]: Leaving directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-ForJZZ'
+gmake: *** [Makefile:127: cmTC_0bb15/fast] Error 2
+
+
+File CheckSymbolExists.c:
+/* */
+#include <stddef.h>
+#include <stdarg.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include <wchar.h>
+#include <float.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef _ui64toa
+  return ((int*)(&_ui64toa))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+
+Determining if the _stricmp exist failed with the following output:
+Change Dir: /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-OtzsEG
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_75091/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_75091.dir/build.make CMakeFiles/cmTC_75091.dir/build
+gmake[1]: Entering directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-OtzsEG'
+Building C object CMakeFiles/cmTC_75091.dir/CheckSymbolExists.c.o
+/usr/bin/cc   -idirafter "/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/third_party/SDL/src/video/khronos"  -D_GNU_SOURCE=1 -fdiagnostics-color=always -o CMakeFiles/cmTC_75091.dir/CheckSymbolExists.c.o -c /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-OtzsEG/CheckSymbolExists.c
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-OtzsEG/CheckSymbolExists.c:[m[K In function '[01m[Kmain[m[K':
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-OtzsEG/CheckSymbolExists.c:14:19:[m[K [01;31m[Kerror: [m[K'[01m[K_stricmp[m[K' undeclared (first use in this function); did you mean '[01m[Kstrncmp[m[K'?
+   14 |   return ((int*)(&[01;31m[K_stricmp[m[K))[argc];
+      |                   [01;31m[K^~~~~~~~[m[K
+      |                   [32m[Kstrncmp[m[K
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-OtzsEG/CheckSymbolExists.c:14:19:[m[K [01;36m[Knote: [m[Keach undeclared identifier is reported only once for each function it appears in
+gmake[1]: *** [CMakeFiles/cmTC_75091.dir/build.make:78: CMakeFiles/cmTC_75091.dir/CheckSymbolExists.c.o] Error 1
+gmake[1]: Leaving directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-OtzsEG'
+gmake: *** [Makefile:127: cmTC_75091/fast] Error 2
+
+
+File CheckSymbolExists.c:
+/* */
+#include <stddef.h>
+#include <stdarg.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include <wchar.h>
+#include <float.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef _stricmp
+  return ((int*)(&_stricmp))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+
+Determining if the _strnicmp exist failed with the following output:
+Change Dir: /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-DyTBbw
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_d7f14/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_d7f14.dir/build.make CMakeFiles/cmTC_d7f14.dir/build
+gmake[1]: Entering directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-DyTBbw'
+Building C object CMakeFiles/cmTC_d7f14.dir/CheckSymbolExists.c.o
+/usr/bin/cc   -idirafter "/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/third_party/SDL/src/video/khronos"  -D_GNU_SOURCE=1 -fdiagnostics-color=always -o CMakeFiles/cmTC_d7f14.dir/CheckSymbolExists.c.o -c /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-DyTBbw/CheckSymbolExists.c
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-DyTBbw/CheckSymbolExists.c:[m[K In function '[01m[Kmain[m[K':
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-DyTBbw/CheckSymbolExists.c:14:19:[m[K [01;31m[Kerror: [m[K'[01m[K_strnicmp[m[K' undeclared (first use in this function); did you mean '[01m[Kstrncmp[m[K'?
+   14 |   return ((int*)(&[01;31m[K_strnicmp[m[K))[argc];
+      |                   [01;31m[K^~~~~~~~~[m[K
+      |                   [32m[Kstrncmp[m[K
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-DyTBbw/CheckSymbolExists.c:14:19:[m[K [01;36m[Knote: [m[Keach undeclared identifier is reported only once for each function it appears in
+gmake[1]: *** [CMakeFiles/cmTC_d7f14.dir/build.make:78: CMakeFiles/cmTC_d7f14.dir/CheckSymbolExists.c.o] Error 1
+gmake[1]: Leaving directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-DyTBbw'
+gmake: *** [Makefile:127: cmTC_d7f14/fast] Error 2
+
+
+File CheckSymbolExists.c:
+/* */
+#include <stddef.h>
+#include <stdarg.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include <wchar.h>
+#include <float.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef _strnicmp
+  return ((int*)(&_strnicmp))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+
+Determining if the _wcsdup exist failed with the following output:
+Change Dir: /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-7eET7P
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_52acd/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_52acd.dir/build.make CMakeFiles/cmTC_52acd.dir/build
+gmake[1]: Entering directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-7eET7P'
+Building C object CMakeFiles/cmTC_52acd.dir/CheckSymbolExists.c.o
+/usr/bin/cc   -idirafter "/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/third_party/SDL/src/video/khronos"  -D_GNU_SOURCE=1 -fdiagnostics-color=always -o CMakeFiles/cmTC_52acd.dir/CheckSymbolExists.c.o -c /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-7eET7P/CheckSymbolExists.c
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-7eET7P/CheckSymbolExists.c:[m[K In function '[01m[Kmain[m[K':
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-7eET7P/CheckSymbolExists.c:14:19:[m[K [01;31m[Kerror: [m[K'[01m[K_wcsdup[m[K' undeclared (first use in this function); did you mean '[01m[Kwcsdup[m[K'?
+   14 |   return ((int*)(&[01;31m[K_wcsdup[m[K))[argc];
+      |                   [01;31m[K^~~~~~~[m[K
+      |                   [32m[Kwcsdup[m[K
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-7eET7P/CheckSymbolExists.c:14:19:[m[K [01;36m[Knote: [m[Keach undeclared identifier is reported only once for each function it appears in
+gmake[1]: *** [CMakeFiles/cmTC_52acd.dir/build.make:78: CMakeFiles/cmTC_52acd.dir/CheckSymbolExists.c.o] Error 1
+gmake[1]: Leaving directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-7eET7P'
+gmake: *** [Makefile:127: cmTC_52acd/fast] Error 2
+
+
+File CheckSymbolExists.c:
+/* */
+#include <stddef.h>
+#include <stdarg.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include <wchar.h>
+#include <float.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef _wcsdup
+  return ((int*)(&_wcsdup))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+
+Determining if the wcslcat exist failed with the following output:
+Change Dir: /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-6by63q
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_21d32/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_21d32.dir/build.make CMakeFiles/cmTC_21d32.dir/build
+gmake[1]: Entering directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-6by63q'
+Building C object CMakeFiles/cmTC_21d32.dir/CheckSymbolExists.c.o
+/usr/bin/cc   -idirafter "/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/third_party/SDL/src/video/khronos"  -D_GNU_SOURCE=1 -fdiagnostics-color=always -o CMakeFiles/cmTC_21d32.dir/CheckSymbolExists.c.o -c /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-6by63q/CheckSymbolExists.c
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-6by63q/CheckSymbolExists.c:[m[K In function '[01m[Kmain[m[K':
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-6by63q/CheckSymbolExists.c:14:19:[m[K [01;31m[Kerror: [m[K'[01m[Kwcslcat[m[K' undeclared (first use in this function); did you mean '[01m[Kwcsncat[m[K'?
+   14 |   return ((int*)(&[01;31m[Kwcslcat[m[K))[argc];
+      |                   [01;31m[K^~~~~~~[m[K
+      |                   [32m[Kwcsncat[m[K
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-6by63q/CheckSymbolExists.c:14:19:[m[K [01;36m[Knote: [m[Keach undeclared identifier is reported only once for each function it appears in
+gmake[1]: *** [CMakeFiles/cmTC_21d32.dir/build.make:78: CMakeFiles/cmTC_21d32.dir/CheckSymbolExists.c.o] Error 1
+gmake[1]: Leaving directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-6by63q'
+gmake: *** [Makefile:127: cmTC_21d32/fast] Error 2
+
+
+File CheckSymbolExists.c:
+/* */
+#include <stddef.h>
+#include <stdarg.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include <wchar.h>
+#include <float.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef wcslcat
+  return ((int*)(&wcslcat))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+
+Determining if the wcslcpy exist failed with the following output:
+Change Dir: /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-4rezPk
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_bd7d8/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_bd7d8.dir/build.make CMakeFiles/cmTC_bd7d8.dir/build
+gmake[1]: Entering directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-4rezPk'
+Building C object CMakeFiles/cmTC_bd7d8.dir/CheckSymbolExists.c.o
+/usr/bin/cc   -idirafter "/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/third_party/SDL/src/video/khronos"  -D_GNU_SOURCE=1 -fdiagnostics-color=always -o CMakeFiles/cmTC_bd7d8.dir/CheckSymbolExists.c.o -c /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-4rezPk/CheckSymbolExists.c
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-4rezPk/CheckSymbolExists.c:[m[K In function '[01m[Kmain[m[K':
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-4rezPk/CheckSymbolExists.c:14:19:[m[K [01;31m[Kerror: [m[K'[01m[Kwcslcpy[m[K' undeclared (first use in this function); did you mean '[01m[Kwcsncpy[m[K'?
+   14 |   return ((int*)(&[01;31m[Kwcslcpy[m[K))[argc];
+      |                   [01;31m[K^~~~~~~[m[K
+      |                   [32m[Kwcsncpy[m[K
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-4rezPk/CheckSymbolExists.c:14:19:[m[K [01;36m[Knote: [m[Keach undeclared identifier is reported only once for each function it appears in
+gmake[1]: *** [CMakeFiles/cmTC_bd7d8.dir/build.make:78: CMakeFiles/cmTC_bd7d8.dir/CheckSymbolExists.c.o] Error 1
+gmake[1]: Leaving directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-4rezPk'
+gmake: *** [Makefile:127: cmTC_bd7d8/fast] Error 2
+
+
+File CheckSymbolExists.c:
+/* */
+#include <stddef.h>
+#include <stdarg.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include <wchar.h>
+#include <float.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef wcslcpy
+  return ((int*)(&wcslcpy))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+
+Determining if the _wcsicmp exist failed with the following output:
+Change Dir: /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-Nf9leR
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_1a296/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_1a296.dir/build.make CMakeFiles/cmTC_1a296.dir/build
+gmake[1]: Entering directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-Nf9leR'
+Building C object CMakeFiles/cmTC_1a296.dir/CheckSymbolExists.c.o
+/usr/bin/cc   -idirafter "/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/third_party/SDL/src/video/khronos"  -D_GNU_SOURCE=1 -fdiagnostics-color=always -o CMakeFiles/cmTC_1a296.dir/CheckSymbolExists.c.o -c /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-Nf9leR/CheckSymbolExists.c
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-Nf9leR/CheckSymbolExists.c:[m[K In function '[01m[Kmain[m[K':
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-Nf9leR/CheckSymbolExists.c:14:19:[m[K [01;31m[Kerror: [m[K'[01m[K_wcsicmp[m[K' undeclared (first use in this function); did you mean '[01m[Kwcsncmp[m[K'?
+   14 |   return ((int*)(&[01;31m[K_wcsicmp[m[K))[argc];
+      |                   [01;31m[K^~~~~~~~[m[K
+      |                   [32m[Kwcsncmp[m[K
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-Nf9leR/CheckSymbolExists.c:14:19:[m[K [01;36m[Knote: [m[Keach undeclared identifier is reported only once for each function it appears in
+gmake[1]: *** [CMakeFiles/cmTC_1a296.dir/build.make:78: CMakeFiles/cmTC_1a296.dir/CheckSymbolExists.c.o] Error 1
+gmake[1]: Leaving directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-Nf9leR'
+gmake: *** [Makefile:127: cmTC_1a296/fast] Error 2
+
+
+File CheckSymbolExists.c:
+/* */
+#include <stddef.h>
+#include <stdarg.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include <wchar.h>
+#include <float.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef _wcsicmp
+  return ((int*)(&_wcsicmp))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+
+Determining if the _wcsnicmp exist failed with the following output:
+Change Dir: /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-u9vLDL
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_8977c/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_8977c.dir/build.make CMakeFiles/cmTC_8977c.dir/build
+gmake[1]: Entering directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-u9vLDL'
+Building C object CMakeFiles/cmTC_8977c.dir/CheckSymbolExists.c.o
+/usr/bin/cc   -idirafter "/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/third_party/SDL/src/video/khronos"  -D_GNU_SOURCE=1 -fdiagnostics-color=always -o CMakeFiles/cmTC_8977c.dir/CheckSymbolExists.c.o -c /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-u9vLDL/CheckSymbolExists.c
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-u9vLDL/CheckSymbolExists.c:[m[K In function '[01m[Kmain[m[K':
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-u9vLDL/CheckSymbolExists.c:14:19:[m[K [01;31m[Kerror: [m[K'[01m[K_wcsnicmp[m[K' undeclared (first use in this function); did you mean '[01m[Kwcsncmp[m[K'?
+   14 |   return ((int*)(&[01;31m[K_wcsnicmp[m[K))[argc];
+      |                   [01;31m[K^~~~~~~~~[m[K
+      |                   [32m[Kwcsncmp[m[K
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-u9vLDL/CheckSymbolExists.c:14:19:[m[K [01;36m[Knote: [m[Keach undeclared identifier is reported only once for each function it appears in
+gmake[1]: *** [CMakeFiles/cmTC_8977c.dir/build.make:78: CMakeFiles/cmTC_8977c.dir/CheckSymbolExists.c.o] Error 1
+gmake[1]: Leaving directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-u9vLDL'
+gmake: *** [Makefile:127: cmTC_8977c/fast] Error 2
+
+
+File CheckSymbolExists.c:
+/* */
+#include <stddef.h>
+#include <stdarg.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include <wchar.h>
+#include <float.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef _wcsnicmp
+  return ((int*)(&_wcsnicmp))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+
+Determining if the sysctlbyname exist failed with the following output:
+Change Dir: /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-6DDKFv
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_be691/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_be691.dir/build.make CMakeFiles/cmTC_be691.dir/build
+gmake[1]: Entering directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-6DDKFv'
+Building C object CMakeFiles/cmTC_be691.dir/CheckSymbolExists.c.o
+/usr/bin/cc   -idirafter "/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/third_party/SDL/src/video/khronos"  -D_GNU_SOURCE=1 -fdiagnostics-color=always -o CMakeFiles/cmTC_be691.dir/CheckSymbolExists.c.o -c /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-6DDKFv/CheckSymbolExists.c
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-6DDKFv/CheckSymbolExists.c:3:10:[m[K [01;31m[Kfatal error: [m[Ksys/sysctl.h: No such file or directory
+    3 | #include [01;31m[K<sys/sysctl.h>[m[K
+      |          [01;31m[K^~~~~~~~~~~~~~[m[K
+compilation terminated.
+gmake[1]: *** [CMakeFiles/cmTC_be691.dir/build.make:78: CMakeFiles/cmTC_be691.dir/CheckSymbolExists.c.o] Error 1
+gmake[1]: Leaving directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-6DDKFv'
+gmake: *** [Makefile:127: cmTC_be691/fast] Error 2
+
+
+File CheckSymbolExists.c:
+/* */
+#include <sys/types.h>
+#include <sys/sysctl.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef sysctlbyname
+  return ((int*)(&sysctlbyname))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+
+Determining if the elf_aux_info exist failed with the following output:
+Change Dir: /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-DfVT1F
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_4f100/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_4f100.dir/build.make CMakeFiles/cmTC_4f100.dir/build
+gmake[1]: Entering directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-DfVT1F'
+Building C object CMakeFiles/cmTC_4f100.dir/CheckSymbolExists.c.o
+/usr/bin/cc   -idirafter "/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/third_party/SDL/src/video/khronos"  -D_GNU_SOURCE=1 -fdiagnostics-color=always -o CMakeFiles/cmTC_4f100.dir/CheckSymbolExists.c.o -c /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-DfVT1F/CheckSymbolExists.c
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-DfVT1F/CheckSymbolExists.c:[m[K In function '[01m[Kmain[m[K':
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-DfVT1F/CheckSymbolExists.c:8:19:[m[K [01;31m[Kerror: [m[K'[01m[Kelf_aux_info[m[K' undeclared (first use in this function)
+    8 |   return ((int*)(&[01;31m[Kelf_aux_info[m[K))[argc];
+      |                   [01;31m[K^~~~~~~~~~~~[m[K
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-DfVT1F/CheckSymbolExists.c:8:19:[m[K [01;36m[Knote: [m[Keach undeclared identifier is reported only once for each function it appears in
+gmake[1]: *** [CMakeFiles/cmTC_4f100.dir/build.make:78: CMakeFiles/cmTC_4f100.dir/CheckSymbolExists.c.o] Error 1
+gmake[1]: Leaving directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-DfVT1F'
+gmake: *** [Makefile:127: cmTC_4f100/fast] Error 2
+
+
+File CheckSymbolExists.c:
+/* */
+#include <sys/auxv.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef elf_aux_info
+  return ((int*)(&elf_aux_info))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+
+Determining if the function iconv_open exists in the iconv failed with the following output:
+Change Dir: /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-xE4qKq
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_0ecdb/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_0ecdb.dir/build.make CMakeFiles/cmTC_0ecdb.dir/build
+gmake[1]: Entering directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-xE4qKq'
+Building C object CMakeFiles/cmTC_0ecdb.dir/CheckFunctionExists.c.o
+/usr/bin/cc   -idirafter "/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/third_party/SDL/src/video/khronos" -DCHECK_FUNCTION_EXISTS=iconv_open  -D_GNU_SOURCE=1 -fdiagnostics-color=always -o CMakeFiles/cmTC_0ecdb.dir/CheckFunctionExists.c.o -c /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-xE4qKq/CheckFunctionExists.c
+Linking C executable cmTC_0ecdb
+/usr/local/bin/cmake -E cmake_link_script CMakeFiles/cmTC_0ecdb.dir/link.txt --verbose=1
+/usr/bin/cc  -idirafter "/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/third_party/SDL/src/video/khronos" -DCHECK_FUNCTION_EXISTS=iconv_open  -D_GNU_SOURCE=1 CMakeFiles/cmTC_0ecdb.dir/CheckFunctionExists.c.o -o cmTC_0ecdb  -liconv 
+/usr/bin/ld: cannot find -liconv: No such file or directory
+collect2: error: ld returned 1 exit status
+gmake[1]: *** [CMakeFiles/cmTC_0ecdb.dir/build.make:99: cmTC_0ecdb] Error 1
+gmake[1]: Leaving directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-xE4qKq'
+gmake: *** [Makefile:127: cmTC_0ecdb/fast] Error 2
+
+
+
+Determining if the alloca exist failed with the following output:
+Change Dir: /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-kN0QYm
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_388b0/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_388b0.dir/build.make CMakeFiles/cmTC_388b0.dir/build
+gmake[1]: Entering directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-kN0QYm'
+Building C object CMakeFiles/cmTC_388b0.dir/CheckSymbolExists.c.o
+/usr/bin/cc   -idirafter "/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/third_party/SDL/src/video/khronos"  -D_GNU_SOURCE=1 -fdiagnostics-color=always -o CMakeFiles/cmTC_388b0.dir/CheckSymbolExists.c.o -c /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-kN0QYm/CheckSymbolExists.c
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-kN0QYm/CheckSymbolExists.c:[m[K In function '[01m[Kmain[m[K':
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-kN0QYm/CheckSymbolExists.c:8:19:[m[K [01;31m[Kerror: [m[K'[01m[Kalloca[m[K' undeclared (first use in this function); did you mean '[01m[Kvalloc[m[K'?
+    8 |   return ((int*)(&[01;31m[Kalloca[m[K))[argc];
+      |                   [01;31m[K^~~~~~[m[K
+      |                   [32m[Kvalloc[m[K
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-kN0QYm/CheckSymbolExists.c:8:19:[m[K [01;36m[Knote: [m[Keach undeclared identifier is reported only once for each function it appears in
+gmake[1]: *** [CMakeFiles/cmTC_388b0.dir/build.make:78: CMakeFiles/cmTC_388b0.dir/CheckSymbolExists.c.o] Error 1
+gmake[1]: Leaving directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-kN0QYm'
+gmake: *** [Makefile:127: cmTC_388b0/fast] Error 2
+
+
+File CheckSymbolExists.c:
+/* */
+#include <malloc.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef alloca
+  return ((int*)(&alloca))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+
+Determining if the include file audio/audiolib.h exists failed with the following output:
+Change Dir: /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-HPdOHw
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_3f439/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_3f439.dir/build.make CMakeFiles/cmTC_3f439.dir/build
+gmake[1]: Entering directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-HPdOHw'
+Building C object CMakeFiles/cmTC_3f439.dir/CheckIncludeFile.c.o
+/usr/bin/cc   -idirafter "/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/third_party/SDL/src/video/khronos"  -D_GNU_SOURCE=1 -fdiagnostics-color=always -o CMakeFiles/cmTC_3f439.dir/CheckIncludeFile.c.o -c /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-HPdOHw/CheckIncludeFile.c
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-HPdOHw/CheckIncludeFile.c:1:10:[m[K [01;31m[Kfatal error: [m[Kaudio/audiolib.h: No such file or directory
+    1 | #include [01;31m[K<audio/audiolib.h>[m[K
+      |          [01;31m[K^~~~~~~~~~~~~~~~~~[m[K
+compilation terminated.
+gmake[1]: *** [CMakeFiles/cmTC_3f439.dir/build.make:78: CMakeFiles/cmTC_3f439.dir/CheckIncludeFile.c.o] Error 1
+gmake[1]: Leaving directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-HPdOHw'
+gmake: *** [Makefile:127: cmTC_3f439/fast] Error 2
+
+
+
+Performing C SOURCE FILE Test HAVE_RPI failed with the following output:
+Change Dir: /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-D89Csm
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_720d0/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_720d0.dir/build.make CMakeFiles/cmTC_720d0.dir/build
+gmake[1]: Entering directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-D89Csm'
+Building C object CMakeFiles/cmTC_720d0.dir/src.c.o
+/usr/bin/cc -DHAVE_RPI  -idirafter "/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/third_party/SDL/src/video/khronos"  -D_GNU_SOURCE=1  -I/opt/vc/include -I/opt/vc/include/interface/vcos/pthreads -I/opt/vc/include/interface/vmcs_host/linux/  -L/opt/vc/lib -fdiagnostics-color=always -o CMakeFiles/cmTC_720d0.dir/src.c.o -c /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-D89Csm/src.c
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-D89Csm/src.c:2:18:[m[K [01;31m[Kfatal error: [m[Kbcm_host.h: No such file or directory
+    2 |         #include [01;31m[K<bcm_host.h>[m[K
+      |                  [01;31m[K^~~~~~~~~~~~[m[K
+compilation terminated.
+gmake[1]: *** [CMakeFiles/cmTC_720d0.dir/build.make:78: CMakeFiles/cmTC_720d0.dir/src.c.o] Error 1
+gmake[1]: Leaving directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-D89Csm'
+gmake: *** [Makefile:127: cmTC_720d0/fast] Error 2
+
+
+Source file was:
+
+        #include <bcm_host.h>
+        #include <EGL/eglplatform.h>
+        int main(int argc, char **argv) {
+          EGL_DISPMANX_WINDOW_T window;
+          bcm_host_init();
+        }
+
+Performing C SOURCE FILE Test HAVE_VIVANTE_VDK failed with the following output:
+Change Dir: /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-QrFik5
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_cb997/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_cb997.dir/build.make CMakeFiles/cmTC_cb997.dir/build
+gmake[1]: Entering directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-QrFik5'
+Building C object CMakeFiles/cmTC_cb997.dir/src.c.o
+/usr/bin/cc -DHAVE_VIVANTE_VDK  -idirafter "/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/third_party/SDL/src/video/khronos"  -D_GNU_SOURCE=1 -fdiagnostics-color=always -o CMakeFiles/cmTC_cb997.dir/src.c.o -c /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-QrFik5/src.c
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-QrFik5/src.c:2:18:[m[K [01;31m[Kfatal error: [m[Kgc_vdk.h: No such file or directory
+    2 |         #include [01;31m[K<gc_vdk.h>[m[K
+      |                  [01;31m[K^~~~~~~~~~[m[K
+compilation terminated.
+gmake[1]: *** [CMakeFiles/cmTC_cb997.dir/build.make:78: CMakeFiles/cmTC_cb997.dir/src.c.o] Error 1
+gmake[1]: Leaving directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-QrFik5'
+gmake: *** [Makefile:127: cmTC_cb997/fast] Error 2
+
+
+Source file was:
+
+        #include <gc_vdk.h>
+        int main(int argc, char** argv) { return 0; }
+
+Performing C SOURCE FILE Test HAVE_VIVANTE_EGL_FB failed with the following output:
+Change Dir: /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-na8KdC
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_de3e7/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_de3e7.dir/build.make CMakeFiles/cmTC_de3e7.dir/build
+gmake[1]: Entering directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-na8KdC'
+Building C object CMakeFiles/cmTC_de3e7.dir/src.c.o
+/usr/bin/cc -DHAVE_VIVANTE_EGL_FB  -idirafter "/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/third_party/SDL/src/video/khronos"  -D_GNU_SOURCE=1 -fdiagnostics-color=always -o CMakeFiles/cmTC_de3e7.dir/src.c.o -c /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-na8KdC/src.c
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-na8KdC/src.c:4:18:[m[K [01;31m[Kfatal error: [m[KEGL/eglvivante.h: No such file or directory
+    4 |         #include [01;31m[K<EGL/eglvivante.h>[m[K
+      |                  [01;31m[K^~~~~~~~~~~~~~~~~~[m[K
+compilation terminated.
+gmake[1]: *** [CMakeFiles/cmTC_de3e7.dir/build.make:78: CMakeFiles/cmTC_de3e7.dir/src.c.o] Error 1
+gmake[1]: Leaving directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-na8KdC'
+gmake: *** [Makefile:127: cmTC_de3e7/fast] Error 2
+
+
+Source file was:
+
+        #define LINUX
+        #define EGL_API_FB
+        #include <EGL/eglvivante.h>
+        int main(int argc, char** argv) { return 0; }
+
+Determining if files pthread_np.h exist failed with the following output:
+Change Dir: /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-ZSDk0u
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_a1a97/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_a1a97.dir/build.make CMakeFiles/cmTC_a1a97.dir/build
+gmake[1]: Entering directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-ZSDk0u'
+Building C object CMakeFiles/cmTC_a1a97.dir/HAVE_PTHREAD_NP_H.c.o
+/usr/bin/cc   -idirafter "/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/third_party/SDL/src/video/khronos"  -D_GNU_SOURCE=1 -D_REENTRANT -pthread -fdiagnostics-color=always -o CMakeFiles/cmTC_a1a97.dir/HAVE_PTHREAD_NP_H.c.o -c /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-ZSDk0u/HAVE_PTHREAD_NP_H.c
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-ZSDk0u/HAVE_PTHREAD_NP_H.c:2:10:[m[K [01;31m[Kfatal error: [m[Kpthread_np.h: No such file or directory
+    2 | #include [01;31m[K<pthread_np.h>[m[K
+      |          [01;31m[K^~~~~~~~~~~~~~[m[K
+compilation terminated.
+gmake[1]: *** [CMakeFiles/cmTC_a1a97.dir/build.make:78: CMakeFiles/cmTC_a1a97.dir/HAVE_PTHREAD_NP_H.c.o] Error 1
+gmake[1]: Leaving directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-ZSDk0u'
+gmake: *** [Makefile:127: cmTC_a1a97/fast] Error 2
+
+
+Source:
+/* */
+#include <pthread_np.h>
+
+
+int main(void){return 0;}
+
+Determining if the include file samplerate.h exists failed with the following output:
+Change Dir: /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-SwkyK9
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_08be1/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_08be1.dir/build.make CMakeFiles/cmTC_08be1.dir/build
+gmake[1]: Entering directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-SwkyK9'
+Building C object CMakeFiles/cmTC_08be1.dir/CheckIncludeFile.c.o
+/usr/bin/cc   -idirafter "/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/third_party/SDL/src/video/khronos" -DHAVE_LINUX_VERSION_H  -D_GNU_SOURCE=1 -fdiagnostics-color=always -o CMakeFiles/cmTC_08be1.dir/CheckIncludeFile.c.o -c /mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-SwkyK9/CheckIncludeFile.c
+[01m[K/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-SwkyK9/CheckIncludeFile.c:1:10:[m[K [01;31m[Kfatal error: [m[Ksamplerate.h: No such file or directory
+    1 | #include [01;31m[K<samplerate.h>[m[K
+      |          [01;31m[K^~~~~~~~~~~~~~[m[K
+compilation terminated.
+gmake[1]: *** [CMakeFiles/cmTC_08be1.dir/build.make:78: CMakeFiles/cmTC_08be1.dir/CheckIncludeFile.c.o] Error 1
+gmake[1]: Leaving directory '/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-SwkyK9'
+gmake: *** [Makefile:127: cmTC_08be1/fast] Error 2
+
+
+

@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6"/>
+	<Project>
+		<Option title="SDL2"/>
+		<Option makefile_is_custom="1"/>
+		<Option compiler="gcc"/>
+		<Option virtualFolders="CMake Files\;CMake Files\third_party\;CMake Files\third_party\fmt\;CMake Files\third_party\fmt\support\;CMake Files\third_party\fmt\support\cmake\;CMake Files\third_party\SDL\;CMake Files\third_party\SDL\cmake\;CMake Files\third_party\SDL\include\;CMake Files\third_party\fastgltf\;CMake Files\third_party\fastgltf\cmake\;CMake Files\cmake-build-debug\;CMake Files\cmake-build-debug\third_party\;CMake Files\cmake-build-debug\third_party\SDL\;CMake Files\src\;"/>
+		<Build>
+			<Target title="all">
+				<Option working_dir="/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/gmake -j16 -f &quot;/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL/Makefile&quot;  VERBOSE=1 all"/>
+					<CompileFile command="/usr/bin/gmake -j16 -f &quot;/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/gmake -j16 -f &quot;/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/gmake -j16 -f &quot;/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="sdl_headers_copy">
+				<Option working_dir="/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/gmake -j16 -f &quot;/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL/Makefile&quot;  VERBOSE=1 sdl_headers_copy"/>
+					<CompileFile command="/usr/bin/gmake -j16 -f &quot;/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/gmake -j16 -f &quot;/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/gmake -j16 -f &quot;/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="SDL2main">
+				<Option output="/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL/libSDL2maind.a" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL"/>
+				<Option object_output="./"/>
+				<Option type="2"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL/include-config-debug/SDL2"/>
+					<Add directory="/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL/include/SDL2"/>
+					<Add directory="/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL/include"/>
+					<Add directory="/usr/include/c++/11"/>
+					<Add directory="/usr/include/x86_64-linux-gnu/c++/11"/>
+					<Add directory="/usr/include/c++/11/backward"/>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/11/include"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/usr/include/x86_64-linux-gnu"/>
+					<Add directory="/usr/include"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/gmake -j16 -f &quot;/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL/Makefile&quot;  VERBOSE=1 SDL2main"/>
+					<CompileFile command="/usr/bin/gmake -j16 -f &quot;/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/gmake -j16 -f &quot;/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/gmake -j16 -f &quot;/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="SDL2main/fast">
+				<Option output="/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL/libSDL2maind.a" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL"/>
+				<Option object_output="./"/>
+				<Option type="2"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL/include-config-debug/SDL2"/>
+					<Add directory="/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL/include/SDL2"/>
+					<Add directory="/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL/include"/>
+					<Add directory="/usr/include/c++/11"/>
+					<Add directory="/usr/include/x86_64-linux-gnu/c++/11"/>
+					<Add directory="/usr/include/c++/11/backward"/>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/11/include"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/usr/include/x86_64-linux-gnu"/>
+					<Add directory="/usr/include"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/gmake -j16 -f &quot;/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL/Makefile&quot;  VERBOSE=1 SDL2main/fast"/>
+					<CompileFile command="/usr/bin/gmake -j16 -f &quot;/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/gmake -j16 -f &quot;/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/gmake -j16 -f &quot;/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="SDL2">
+				<Option output="/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL/libSDL2-2.0d.so" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL"/>
+				<Option object_output="./"/>
+				<Option type="3"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DUSING_GENERATED_CONFIG_H"/>
+					<Add directory="/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL/include"/>
+					<Add directory="/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL/include/SDL2"/>
+					<Add directory="/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL/include-config-debug/SDL2"/>
+					<Add directory="/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL/include-config-debug"/>
+					<Add directory="/usr/include/libdrm"/>
+					<Add directory="/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/third_party/SDL"/>
+					<Add directory="/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL/wayland-generated-protocols"/>
+					<Add directory="/usr/include/dbus-1.0"/>
+					<Add directory="/usr/lib/x86_64-linux-gnu/dbus-1.0/include"/>
+					<Add directory="/usr/include/c++/11"/>
+					<Add directory="/usr/include/x86_64-linux-gnu/c++/11"/>
+					<Add directory="/usr/include/c++/11/backward"/>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/11/include"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/usr/include/x86_64-linux-gnu"/>
+					<Add directory="/usr/include"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/gmake -j16 -f &quot;/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL/Makefile&quot;  VERBOSE=1 SDL2"/>
+					<CompileFile command="/usr/bin/gmake -j16 -f &quot;/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/gmake -j16 -f &quot;/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/gmake -j16 -f &quot;/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="SDL2/fast">
+				<Option output="/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL/libSDL2-2.0d.so" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL"/>
+				<Option object_output="./"/>
+				<Option type="3"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DUSING_GENERATED_CONFIG_H"/>
+					<Add directory="/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL/include"/>
+					<Add directory="/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL/include/SDL2"/>
+					<Add directory="/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL/include-config-debug/SDL2"/>
+					<Add directory="/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL/include-config-debug"/>
+					<Add directory="/usr/include/libdrm"/>
+					<Add directory="/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/third_party/SDL"/>
+					<Add directory="/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL/wayland-generated-protocols"/>
+					<Add directory="/usr/include/dbus-1.0"/>
+					<Add directory="/usr/lib/x86_64-linux-gnu/dbus-1.0/include"/>
+					<Add directory="/usr/include/c++/11"/>
+					<Add directory="/usr/include/x86_64-linux-gnu/c++/11"/>
+					<Add directory="/usr/include/c++/11/backward"/>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/11/include"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/usr/include/x86_64-linux-gnu"/>
+					<Add directory="/usr/include"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/gmake -j16 -f &quot;/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL/Makefile&quot;  VERBOSE=1 SDL2/fast"/>
+					<CompileFile command="/usr/bin/gmake -j16 -f &quot;/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/gmake -j16 -f &quot;/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/gmake -j16 -f &quot;/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="SDL2-static">
+				<Option output="/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL/libSDL2d.a" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL"/>
+				<Option object_output="./"/>
+				<Option type="2"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DSDL_STATIC_LIB"/>
+					<Add option="-DUSING_GENERATED_CONFIG_H"/>
+					<Add directory="/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL/include"/>
+					<Add directory="/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL/include/SDL2"/>
+					<Add directory="/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL/include-config-debug/SDL2"/>
+					<Add directory="/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL/include-config-debug"/>
+					<Add directory="/usr/include/libdrm"/>
+					<Add directory="/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/third_party/SDL"/>
+					<Add directory="/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL/wayland-generated-protocols"/>
+					<Add directory="/usr/include/dbus-1.0"/>
+					<Add directory="/usr/lib/x86_64-linux-gnu/dbus-1.0/include"/>
+					<Add directory="/usr/include/c++/11"/>
+					<Add directory="/usr/include/x86_64-linux-gnu/c++/11"/>
+					<Add directory="/usr/include/c++/11/backward"/>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/11/include"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/usr/include/x86_64-linux-gnu"/>
+					<Add directory="/usr/include"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/gmake -j16 -f &quot;/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL/Makefile&quot;  VERBOSE=1 SDL2-static"/>
+					<CompileFile command="/usr/bin/gmake -j16 -f &quot;/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/gmake -j16 -f &quot;/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/gmake -j16 -f &quot;/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="SDL2-static/fast">
+				<Option output="/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL/libSDL2d.a" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL"/>
+				<Option object_output="./"/>
+				<Option type="2"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DSDL_STATIC_LIB"/>
+					<Add option="-DUSING_GENERATED_CONFIG_H"/>
+					<Add directory="/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL/include"/>
+					<Add directory="/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL/include/SDL2"/>
+					<Add directory="/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL/include-config-debug/SDL2"/>
+					<Add directory="/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL/include-config-debug"/>
+					<Add directory="/usr/include/libdrm"/>
+					<Add directory="/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/third_party/SDL"/>
+					<Add directory="/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL/wayland-generated-protocols"/>
+					<Add directory="/usr/include/dbus-1.0"/>
+					<Add directory="/usr/lib/x86_64-linux-gnu/dbus-1.0/include"/>
+					<Add directory="/usr/include/c++/11"/>
+					<Add directory="/usr/include/x86_64-linux-gnu/c++/11"/>
+					<Add directory="/usr/include/c++/11/backward"/>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/11/include"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/usr/include/x86_64-linux-gnu"/>
+					<Add directory="/usr/include"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/gmake -j16 -f &quot;/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL/Makefile&quot;  VERBOSE=1 SDL2-static/fast"/>
+					<CompileFile command="/usr/bin/gmake -j16 -f &quot;/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/gmake -j16 -f &quot;/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/gmake -j16 -f &quot;/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="SDL2_test">
+				<Option output="/mnt/c/Users/ellipsoid/CLionProjects/vulkan-guide/cmake-build-debug/third_party/SDL/lib

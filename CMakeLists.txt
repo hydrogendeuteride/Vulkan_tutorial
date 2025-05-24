@@ -5,6 +5,11 @@ cmake_minimum_required (VERSION 3.8)
 
 project ("vulkan_guide")
 
+if (WIN32)
+    set(VULKAN_SDK "$ENV{VULKAN_SDK}")
+    set(Vulkan_INCLUDE_DIR "C:/VulkanSDK/1.3.296.0/Include")
+    set(Vulkan_LIBRARY "C:/VulkanSDK/1.3.296.0/Lib/vulkan-1.lib")
+endif()
 
 find_package(Vulkan REQUIRED)
 
@@ -39,6 +44,5 @@ foreach(GLSL ${GLSL_SOURCE_FILES})
 endforeach(GLSL)
 
 add_custom_target(
-    Shaders 
     DEPENDS ${SPIRV_BINARY_FILES}
     )
