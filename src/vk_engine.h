@@ -135,7 +135,7 @@ public:
 
 	Camera mainCamera;
 
-	VkExtent2D _windowExtent{1700, 900};
+	VkExtent2D _windowExtent{1920, 1080};
 
 	struct SDL_Window *_window{nullptr};
 
