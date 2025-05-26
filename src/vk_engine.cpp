@@ -2,8 +2,8 @@
 #include "vk_engine.h"
 #include <vk_images.h>
 
-#include <SDL.h>
-#include <SDL_vulkan.h>
+#include "SDL2/SDL.h"
+#include "SDL2/SDL_vulkan.h"
 
 #include <vk_initializers.h>
 #include <vk_types.h>
@@ -59,6 +59,20 @@ void VulkanEngine::init()
     init_imgui();
 
     init_default_data();
+
+    mainCamera.velocity = glm::vec3(0.f);
+    mainCamera.position = glm::vec3(30.f, -00.f, -085.f);
+
+    mainCamera.pitch = 0;
+    mainCamera.yaw = 0;
+
+    std::string structurePath = {"../assets/structure.glb"};
+    auto structureFile = loadGltf(this, structurePath);
+
+    assert(structureFile.has_value());
+
+    loadedScenes["structure"] = *structureFile;
+
 
     //everything went fine
     _isInitialized = true;
@@ -142,8 +156,8 @@ void GLTFMetallic_Roughness::build_pipelines(VulkanEngine *engine)
 
 void GLTFMetallic_Roughness::clear_resources(VkDevice device)
 {
-    vkDestroyDescriptorSetLayout(device,materialLayout,nullptr);
-    vkDestroyPipelineLayout(device,transparentPipeline.layout,nullptr);
+    vkDestroyDescriptorSetLayout(device, materialLayout, nullptr);
+    vkDestroyPipelineLayout(device, transparentPipeline.layout, nullptr);
 
     vkDestroyPipeline(device, transparentPipeline.pipeline, nullptr);
     vkDestroyPipeline(device, opaquePipeline.pipeline, nullptr);
@@ -182,6 +196,10 @@ MaterialInstance GLTFMetallic_Roughness::write_material(VkDevice device, Materia
 
 void VulkanEngine::cleanup()
 {
+    vkDeviceWaitIdle(_device);
+
+    loadedScenes.clear();
+
     if (_isInitialized)
     {
         //make sure the gpu has stopped doing its things
@@ -289,8 +307,7 @@ void VulkanEngine::draw_geometry(VkCommandBuffer cmd)
     writer.write_buffer(0, gpuSceneDataBuffer.buffer, sizeof(GPUSceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
     writer.update_set(_device, globalDescriptor);
 
-    for (const RenderObject &draw: mainDrawContext.OpaqueSurfaces)
-    {
+    auto draw = [&](const RenderObject &draw) {
         vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, draw.material->pipeline->pipeline);
         vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, draw.material->pipeline->layout, 0, 1,
                                 &globalDescriptor, 0, nullptr);
@@ -306,6 +323,16 @@ void VulkanEngine::draw_geometry(VkCommandBuffer cmd)
                            sizeof(GPUDrawPushConstants), &pushConstants);
 
         vkCmdDrawIndexed(cmd, draw.indexCount, 1, draw.firstIndex, 0, 0);
+    };
+
+    for (auto &r: mainDrawContext.OpaqueSurfaces)
+    {
+        draw(r);
+    }
+
+    for (auto &r: mainDrawContext.TransparentSurfaces)
+    {
+        draw(r);
     }
 
     vkCmdEndRendering(cmd);
@@ -328,28 +355,23 @@ void VulkanEngine::update_scene()
 {
     mainDrawContext.OpaqueSurfaces.clear();
 
-    for (auto &m: loadedNodes)
-    {
-        m.second->Draw(glm::mat4{1.f}, mainDrawContext);
-    }
+    mainCamera.update();
 
-    for (int x = -3; x < 3; x++)
-    {
-        glm::mat4 scale = glm::scale(glm::vec3{0.2});
-        glm::mat4 translation = glm::translate(glm::vec3{x, 1, 0});
+    loadedScenes["structure"]->Draw(glm::mat4{1.f}, mainDrawContext);
 
-        loadedNodes["Cube"]->Draw(translation * scale, mainDrawContext);
-    }
+    glm::mat4 view = mainCamera.getViewMatrix();
 
-    sceneData.view = glm::translate(glm::vec3{0, 0, -5});
     // camera projection
-    sceneData.proj = glm::perspective(glm::radians(70.f), (float) _windowExtent.width / (float) _windowExtent.height,
-                                      10000.f, 0.1f);
+    glm::mat4 projection = glm::perspective(glm::radians(70.f),
+                                            (float) _windowExtent.width / (float) _windowExtent.height, 10000.f, 0.1f);
 
     // invert the Y direction on projection matrix so that we are more similar
     // to opengl and gltf axis
-    sceneData.proj[1][1] *= -1;
-    sceneData.viewproj = sceneData.proj * sceneData.view;
+    projection[1][1] *= -1;
+
+    sceneData.view = view;
+    sceneData.proj = projection;
+    sceneData.viewproj = projection * view;
 }
 
 void VulkanEngine::draw()
@@ -539,6 +561,7 @@ void VulkanEngine::run()
                     freeze_rendering = false;
                 }
             }
+            mainCamera.processSDLEvent(e);
             ImGui_ImplSDL2_ProcessEvent(&e);
         }
 
@@ -1225,51 +1248,6 @@ void VulkanEngine::init_default_data()
         destroy_image(_errorCheckerboardImage);
     });
     //< default_img
-
-    GLTFMetallic_Roughness::MaterialResources materialResources;
-    //default the material textures
-    materialResources.colorImage = _whiteImage;
-    materialResources.colorSampler = _defaultSamplerLinear;
-    materialResources.metalRoughImage = _whiteImage;
-    materialResources.metalRoughSampler = _defaultSamplerLinear;
-
-    //set the uniform buffer for the material data
-    AllocatedBuffer materialConstants = create_buffer(sizeof(GLTFMetallic_Roughness::MaterialConstants),
-                                                      VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
-
-    //write the buffer
-    GLTFMetallic_Roughness::MaterialConstants *sceneUniformData = (GLTFMetallic_Roughness::MaterialConstants *)
-            materialConstants.allocation->GetMappedData();
-    sceneUniformData->colorFactors = glm::vec4{1, 1, 1, 1};
-    sceneUniformData->metal_rough_factors = glm::vec4{1, 0.5, 0, 0};
-
-    _mainDeletionQueue.push_function([=, this]() {
-        destroy_buffer(materialConstants);
-    });
-
-    materialResources.dataBuffer = materialConstants.buffer;
-    materialResources.dataBufferOffset = 0;
-
-    defaultData = metalRoughMaterial.write_material(_device, MaterialPass::MainColor, materialResources,
-                                                    globalDescriptorAllocator);
-
-    testMeshes = loadGltfMeshes(this, "../assets/basicmesh.glb").value();
-
-    for (auto &m: testMeshes)
-    {
-        std::shared_ptr<MeshNode> newNode = std::make_shared<MeshNode>();
-        newNode->mesh = m;
-
-        newNode->localTransform = glm::mat4{1.f};
-        newNode->worldTransform = glm::mat4{1.f};
-
-        for (auto &s: newNode->mesh->surfaces)
-        {
-            s.material = std::make_shared<GLTFMaterial>(defaultData);
-        }
-
-        loadedNodes[m->name] = std::move(newNode);
-    }
 }
 
 AllocatedImage VulkanEngine::create_image(VkExtent3D size, VkFormat format, VkImageUsageFlags usage, bool mipmapped)

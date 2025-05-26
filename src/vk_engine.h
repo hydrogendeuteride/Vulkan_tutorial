@@ -10,6 +10,7 @@
 #include <functional>
 #include "vk_descriptors.h"
 #include "vk_loader.h"
+#include <camera.h>
 
 struct DeletionQueue
 {
@@ -106,6 +107,7 @@ struct RenderObject
 	VkBuffer indexBuffer;
 
 	MaterialInstance *material;
+	Bounds bounds;
 
 	glm::mat4 transform;
 	VkDeviceAddress vertexBufferAddress;
@@ -114,6 +116,7 @@ struct RenderObject
 struct DrawContext
 {
 	std::vector<RenderObject> OpaqueSurfaces;
+	std::vector<RenderObject> TransparentSurfaces;
 };
 
 struct MeshNode : public Node
@@ -129,6 +132,8 @@ class VulkanEngine
 public:
 	bool _isInitialized{false};
 	int _frameNumber{0};
+
+	Camera mainCamera;
 
 	VkExtent2D _windowExtent{1700, 900};
 
@@ -175,6 +180,8 @@ public:
 	VkPipeline _meshPipeline;
 
 	GPUMeshBuffers rectangle;
+	DrawContext drawCommands;
+
 	std::vector<std::shared_ptr<MeshAsset> > testMeshes;
 
 
@@ -201,6 +208,8 @@ public:
 	AllocatedImage _depthImage;
 
 	std::unordered_map<std::string, std::shared_ptr<Node>> loadedNodes;
+
+	std::unordered_map<std::string, std::shared_ptr<LoadedGLTF>> loadedScenes;
 
 	GPUSceneData sceneData;
 	VkDescriptorSetLayout _gpuSceneDataDescriptorLayout;
