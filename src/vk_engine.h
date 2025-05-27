@@ -119,12 +119,20 @@ struct DrawContext
 	std::vector<RenderObject> TransparentSurfaces;
 };
 
+struct EngineStats
+{
+	float frametime;
+	int triangle_count;
+	int drawcall_count;
+	float scene_update_time;
+	float mesh_draw_time;
+};
+
 struct MeshNode : public Node
 {
-
 	std::shared_ptr<MeshAsset> mesh;
 
-	virtual void Draw(const glm::mat4& topMatrix, DrawContext& ctx) override;
+	virtual void Draw(const glm::mat4 &topMatrix, DrawContext &ctx) override;
 };
 
 class VulkanEngine
@@ -207,12 +215,14 @@ public:
 	AllocatedImage _drawImage;
 	AllocatedImage _depthImage;
 
-	std::unordered_map<std::string, std::shared_ptr<Node>> loadedNodes;
+	std::unordered_map<std::string, std::shared_ptr<Node> > loadedNodes;
 
-	std::unordered_map<std::string, std::shared_ptr<LoadedGLTF>> loadedScenes;
+	std::unordered_map<std::string, std::shared_ptr<LoadedGLTF> > loadedScenes;
 
 	GPUSceneData sceneData;
 	VkDescriptorSetLayout _gpuSceneDataDescriptorLayout;
+
+	EngineStats stats;
 
 	std::vector<ComputeEffect> backgroundEffects;
 	int currentBackgroundEffect{0};
