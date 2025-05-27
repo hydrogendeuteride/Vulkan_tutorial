@@ -452,6 +452,8 @@ bool is_visible(const RenderObject &obj, const glm::mat4 &viewproj)
 
 void VulkanEngine::draw_geometry(VkCommandBuffer cmd)
 {
+    auto start = std::chrono::system_clock::now();
+
     std::vector<uint32_t> opaque_draws;
     opaque_draws.reserve(mainDrawContext.OpaqueSurfaces.size());
 
@@ -461,6 +463,10 @@ void VulkanEngine::draw_geometry(VkCommandBuffer cmd)
         {
             opaque_draws.push_back(i);
         }
+    }
+    for (int i = 0; i < mainDrawContext.OpaqueSurfaces.size(); i++)
+    {
+        opaque_draws.push_back(i);
     }
 
     std::sort(opaque_draws.begin(), opaque_draws.end(), [&](const auto &iA, const auto &iB) {
@@ -575,6 +581,11 @@ void VulkanEngine::draw_geometry(VkCommandBuffer cmd)
     }
 
     vkCmdEndRendering(cmd);
+
+    auto end = std::chrono::system_clock::now();
+
+    auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+    stats.mesh_draw_time = elapsed.count() / 1000.f;
 }
 
 void VulkanEngine::run()
@@ -642,17 +653,16 @@ void VulkanEngine::run()
             ImGui::End();
         }
 
-        ImGui::Begin("Stats");
-
-        ImGui::Text("frametime %f ms", stats.frametime);
-        ImGui::Text("draw time %f ms", stats.mesh_draw_time);
-        ImGui::Text("update time %f ms", stats.scene_update_time);
-        ImGui::Text("triangles %i", stats.triangle_count);
-        ImGui::Text("draws %i", stats.drawcall_count);
-        ImGui::End();
-
-        ImGui::Render();
-
+        if (ImGui::Begin("Stats"))
+        {
+            ImGui::Text("frametime %f ms", stats.frametime);
+            ImGui::Text("draw time %f ms", stats.mesh_draw_time);
+            ImGui::Text("update time %f ms", stats.scene_update_time);
+            ImGui::Text("triangles %i", stats.triangle_count);
+            ImGui::Text("draws %i", stats.drawcall_count);
+            ImGui::End();
+        }
+            ImGui::Render();
         draw();
 
         auto end = std::chrono::system_clock::now();
@@ -666,6 +676,7 @@ void VulkanEngine::run()
 void VulkanEngine::update_scene()
 {
     mainDrawContext.OpaqueSurfaces.clear();
+    mainDrawContext.TransparentSurfaces.clear();
 
     mainCamera.update();
 
