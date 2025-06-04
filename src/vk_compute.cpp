@@ -38,7 +38,7 @@ ComputeBinding ComputeBinding::sampledImage(uint32_t binding, VkImageView imageV
     return result;
 }
 
-ComputeBinding ComputeBinding::storageImage(uint32_t binding, VkImageView imageView, VkImageLayout layout)
+ComputeBinding ComputeBinding::makeStorageImage(uint32_t binding, VkImageView imageView, VkImageLayout layout)
 {
     ComputeBinding result;
     result.binding = binding;
@@ -126,7 +126,7 @@ void ComputeManager::init(VulkanEngine *engine)
 
     descriptorAllocator.init(engine->_device, 100, poolSizes);
 
-    registerBuiltinPipelines();
+    // registerBuiltinPipelines();
 }
 
 void ComputeManager::cleanup()
@@ -240,7 +240,7 @@ void ComputeManager::clearImage(VkCommandBuffer cmd, VkImageView imageView, cons
     }
 
     ComputeDispatchInfo dispatchInfo;
-    dispatchInfo.bindings.push_back(ComputeBinding::storageImage(0, imageView));
+    dispatchInfo.bindings.push_back(ComputeBinding::makeStorageImage(0, imageView));
     dispatchInfo.pushConstants = &clearColor;
     dispatchInfo.pushConstantSize = sizeof(glm::vec4);
 

@@ -12,6 +12,8 @@
 #include "vk_loader.h"
 #include <camera.h>
 
+#include "vk_compute.h"
+
 struct DeletionQueue
 {
 	std::deque<std::function<void()> > deletors;
@@ -222,9 +224,17 @@ public:
 	GPUSceneData sceneData;
 	VkDescriptorSetLayout _gpuSceneDataDescriptorLayout;
 
+	ComputeManager computeManager;
+
 	EngineStats stats;
 
-	std::vector<ComputeEffect> backgroundEffects;
+	struct BackgroundEffect
+	{
+		std::string name;
+		ComputePushConstants data;
+	};
+
+	std::vector<BackgroundEffect> backgroundEffects;
 	int currentBackgroundEffect{0};
 
 	//initializes everything in the engine
