@@ -23,8 +23,8 @@ struct ComputeBinding
 
         struct
         {
-            VkImageView imageView;
-            VkImageLayout layout;
+            VkImage image;
+            VkImageLayout imageLayout;
             VkSampler sampler;
         } image;
 
@@ -42,7 +42,7 @@ struct ComputeBinding
     static ComputeBinding sampledImage(uint32_t binding, VkImageView imageView, VkSampler sampler,
                                        VkImageLayout layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-    static ComputeBinding makeStorageImage(uint32_t binding, VkImageView imageView,
+    static ComputeBinding storageImage(uint32_t binding, VkImageView imageView,
                                        VkImageLayout layout = VK_IMAGE_LAYOUT_GENERAL);
 };
 
