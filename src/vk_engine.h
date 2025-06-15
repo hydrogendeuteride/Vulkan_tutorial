@@ -189,10 +189,13 @@ public:
 	VkPipelineLayout _meshPipelineLayout;
 	VkPipeline _meshPipeline;
 
-	GPUMeshBuffers rectangle;
-	DrawContext drawCommands;
+        GPUMeshBuffers rectangle;
+        DrawContext drawCommands;
 
-	std::vector<std::shared_ptr<MeshAsset> > testMeshes;
+        std::vector<std::shared_ptr<MeshAsset> > testMeshes;
+
+        std::shared_ptr<MeshAsset> cubeMesh;
+        std::shared_ptr<MeshAsset> sphereMesh;
 
 
 	// immediate submit structures

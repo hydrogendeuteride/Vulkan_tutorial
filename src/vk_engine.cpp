@@ -16,6 +16,7 @@
 #include <vk_pipelines.h>
 #include <iostream>
 #include <glm/gtx/transform.hpp>
+#include "primitives.h"
 
 #define VMA_IMPLEMENTATION
 
@@ -151,6 +152,82 @@ void VulkanEngine::init_default_data()
     sampl.magFilter = VK_FILTER_LINEAR;
     sampl.minFilter = VK_FILTER_LINEAR;
     vkCreateSampler(_device, &sampl, nullptr, &_defaultSamplerLinear);
+
+    //create a simple white material that we can use for generated meshes
+    GLTFMetallic_Roughness::MaterialResources matResources{};
+    matResources.colorImage = _whiteImage;
+    matResources.colorSampler = _defaultSamplerLinear;
+    matResources.metalRoughImage = _whiteImage;
+    matResources.metalRoughSampler = _defaultSamplerLinear;
+
+    AllocatedBuffer matBuffer = create_buffer(sizeof(GLTFMetallic_Roughness::MaterialConstants),
+                                              VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                                              VMA_MEMORY_USAGE_CPU_TO_GPU);
+    auto *matConstants = (GLTFMetallic_Roughness::MaterialConstants *) matBuffer.allocation->GetMappedData();
+    *matConstants = {};
+    matConstants->colorFactors = glm::vec4(1.0f);
+    matResources.dataBuffer = matBuffer.buffer;
+    matResources.dataBufferOffset = 0;
+
+    auto defaultMaterial = std::make_shared<GLTFMaterial>();
+    defaultMaterial->data = metalRoughMaterial.write_material(_device, MaterialPass::MainColor,
+                                                             matResources, globalDescriptorAllocator);
+
+    //build cube mesh
+    {
+        std::vector<Vertex> verts;
+        std::vector<uint32_t> inds;
+        primitives::buildCube(verts, inds);
+
+        cubeMesh = std::make_shared<MeshAsset>();
+        cubeMesh->name = "Cube";
+        cubeMesh->meshBuffers = uploadMesh(inds, verts);
+
+        GeoSurface surf{};
+        surf.startIndex = 0;
+        surf.count = (uint32_t) inds.size();
+        surf.material = defaultMaterial;
+        surf.bounds.origin = glm::vec3(0.0f);
+        surf.bounds.extents = glm::vec3(0.5f);
+        surf.bounds.sphereRadius = glm::length(surf.bounds.extents);
+        cubeMesh->surfaces.push_back(surf);
+
+        testMeshes.push_back(cubeMesh);
+
+        _mainDeletionQueue.push_function([&, buffers = cubeMesh->meshBuffers]() {
+            destroy_buffer(buffers.indexBuffer);
+            destroy_buffer(buffers.vertexBuffer);
+        });
+    }
+
+    //build sphere mesh
+    {
+        std::vector<Vertex> verts;
+        std::vector<uint32_t> inds;
+        primitives::buildSphere(verts, inds);
+
+        sphereMesh = std::make_shared<MeshAsset>();
+        sphereMesh->name = "Sphere";
+        sphereMesh->meshBuffers = uploadMesh(inds, verts);
+
+        GeoSurface surf{};
+        surf.startIndex = 0;
+        surf.count = (uint32_t) inds.size();
+        surf.material = defaultMaterial;
+        surf.bounds.origin = glm::vec3(0.0f);
+        surf.bounds.extents = glm::vec3(0.5f);
+        surf.bounds.sphereRadius = glm::length(surf.bounds.extents);
+        sphereMesh->surfaces.push_back(surf);
+
+        testMeshes.push_back(sphereMesh);
+
+        _mainDeletionQueue.push_function([&, buffers = sphereMesh->meshBuffers]() {
+            destroy_buffer(buffers.indexBuffer);
+            destroy_buffer(buffers.vertexBuffer);
+        });
+    }
+
+    _mainDeletionQueue.push_function([=]() { destroy_buffer(matBuffer); });
 
     _mainDeletionQueue.push_function([&]() {
         vkDestroySampler(_device, _defaultSamplerNearest, nullptr);
@@ -640,6 +717,34 @@ void VulkanEngine::update_scene()
     mainCamera.update();
 
     loadedScenes["structure"]->Draw(glm::mat4{1.f}, mainDrawContext);
+
+    if (cubeMesh)
+    {
+        const GeoSurface &surf = cubeMesh->surfaces[0];
+        RenderObject obj{};
+        obj.indexCount = surf.count;
+        obj.firstIndex = surf.startIndex;
+        obj.indexBuffer = cubeMesh->meshBuffers.indexBuffer.buffer;
+        obj.vertexBufferAddress = cubeMesh->meshBuffers.vertexBufferAddress;
+        obj.material = &surf.material->data;
+        obj.bounds = surf.bounds;
+        obj.transform = glm::translate(glm::mat4(1.f), glm::vec3(-2.f, 0.f, -2.f));
+        mainDrawContext.OpaqueSurfaces.push_back(obj);
+    }
+
+    if (sphereMesh)
+    {
+        const GeoSurface &surf = sphereMesh->surfaces[0];
+        RenderObject obj{};
+        obj.indexCount = surf.count;
+        obj.firstIndex = surf.startIndex;
+        obj.indexBuffer = sphereMesh->meshBuffers.indexBuffer.buffer;
+        obj.vertexBufferAddress = sphereMesh->meshBuffers.vertexBufferAddress;
+        obj.material = &surf.material->data;
+        obj.bounds = surf.bounds;
+        obj.transform = glm::translate(glm::mat4(1.f), glm::vec3(2.f, 0.f, -2.f));
+        mainDrawContext.OpaqueSurfaces.push_back(obj);
+    }
 
     glm::mat4 view = mainCamera.getViewMatrix();
 
