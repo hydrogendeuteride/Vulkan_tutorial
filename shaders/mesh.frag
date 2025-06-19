@@ -6,15 +6,78 @@
 layout (location = 0) in vec3 inNormal;
 layout (location = 1) in vec3 inColor;
 layout (location = 2) in vec2 inUV;
+layout (location = 3) in vec3 inWorldPos;
 
 layout (location = 0) out vec4 outFragColor;
 
+const float PI = 3.14159265359;
+
+vec3 fresnelSchlick(float cosTheta, vec3 F0)
+{
+    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
+float DistributionGGX(vec3 N, vec3 H, float roughness)
+{
+    float a      = roughness * roughness;
+    float a2     = a * a;
+    float NdotH  = max(dot(N, H), 0.0);
+    float NdotH2 = NdotH * NdotH;
+
+    float num   = a2;
+    float denom = (NdotH2 * (a2 - 1.0) + 1.0);
+    denom = PI * denom * denom;
+
+    return num / max(denom, 0.001);
+}
+
+float GeometrySchlickGGX(float NdotV, float roughness)
+{
+    float r = (roughness + 1.0);
+    float k = (r * r) / 8.0;
+
+    float denom = NdotV * (1.0 - k) + k;
+    return NdotV / denom;
+}
+
+float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
+{
+    float ggx2 = GeometrySchlickGGX(max(dot(N, V), 0.0), roughness);
+    float ggx1 = GeometrySchlickGGX(max(dot(N, L), 0.0), roughness);
+    return ggx1 * ggx2;
+}
+
 void main()
 {
-    float lightValue = max(dot(inNormal, sceneData.sunlightDirection.xyz), 0.1f);
+    vec3 albedo = inColor * texture(colorTex, inUV).rgb * materialData.colorFactors.rgb;
+    vec2 mr = texture(metalRoughTex, inUV).rg * materialData.metal_rough_factors.xy;
+    float metallic = clamp(mr.r, 0.0, 1.0);
+    float roughness = clamp(mr.g, 0.04, 1.0);
 
-    vec3 color = inColor * texture(colorTex,inUV).xyz;
-    vec3 ambient = color *  sceneData.ambientColor.xyz;
+    vec3 N = normalize(inNormal);
+    vec3 camPos = vec3(inverse(sceneData.view)[3]);
+    vec3 V = normalize(camPos - inWorldPos);
+    vec3 L = normalize(-sceneData.sunlightDirection.xyz);
+    vec3 H = normalize(V + L);
 
-    outFragColor = vec4(color * lightValue *  sceneData.sunlightColor.w + ambient ,1.0f);
+    vec3 F0 = mix(vec3(0.04), albedo, metallic);
+    vec3 F  = fresnelSchlick(max(dot(H, V), 0.0), F0);
+    float NDF = DistributionGGX(N, H, roughness);
+    float G   = GeometrySmith(N, V, L, roughness);
+
+    vec3 numerator    = NDF * G * F;
+    float denom       = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0);
+    vec3 specular     = numerator / max(denom, 0.001);
+
+    vec3 kS = F;
+    vec3 kD = vec3(1.0) - kS;
+    kD *= 1.0 - metallic;
+
+    float NdotL = max(dot(N, L), 0.0);
+    vec3 irradiance = sceneData.sunlightColor.rgb * sceneData.sunlightColor.a * NdotL;
+
+    vec3 color = (kD * albedo / PI + specular) * irradiance;
+    color += albedo * sceneData.ambientColor.rgb;
+
+    outFragColor = vec4(color, 1.0);
 }
