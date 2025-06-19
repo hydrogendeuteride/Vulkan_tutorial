@@ -84,35 +84,6 @@ void VulkanEngine::init()
 
 void VulkanEngine::init_default_data()
 {
-    std::array<Vertex, 4> rect_vertices;
-
-    rect_vertices[0].position = {0.5, -0.5, 0};
-    rect_vertices[1].position = {0.5, 0.5, 0};
-    rect_vertices[2].position = {-0.5, -0.5, 0};
-    rect_vertices[3].position = {-0.5, 0.5, 0};
-
-    rect_vertices[0].color = {0, 0, 0, 1};
-    rect_vertices[1].color = {0.5, 0.5, 0.5, 1};
-    rect_vertices[2].color = {1, 0, 0, 1};
-    rect_vertices[3].color = {0, 1, 0, 1};
-
-    std::array<uint32_t, 6> rect_indices;
-
-    rect_indices[0] = 0;
-    rect_indices[1] = 1;
-    rect_indices[2] = 2;
-
-    rect_indices[3] = 2;
-    rect_indices[4] = 1;
-    rect_indices[5] = 3;
-
-    rectangle = uploadMesh(rect_indices, rect_vertices);
-
-    _mainDeletionQueue.push_function([&]() {
-        destroy_buffer(rectangle.indexBuffer);
-        destroy_buffer(rectangle.vertexBuffer);
-    });
-
     //> default_img
     //3 default textures, white, grey, black. 1 pixel each
     uint32_t white = glm::packUnorm4x8(glm::vec4(1, 1, 1, 1));
@@ -191,11 +162,6 @@ void VulkanEngine::init_default_data()
         cubeMesh->surfaces.push_back(surf);
 
         testMeshes.push_back(cubeMesh);
-
-        _mainDeletionQueue.push_function([&, buffers = cubeMesh->meshBuffers]() {
-            destroy_buffer(buffers.indexBuffer);
-            destroy_buffer(buffers.vertexBuffer);
-        });
     }
 
     //build sphere mesh
@@ -218,11 +184,6 @@ void VulkanEngine::init_default_data()
         sphereMesh->surfaces.push_back(surf);
 
         testMeshes.push_back(sphereMesh);
-
-        _mainDeletionQueue.push_function([&, buffers = sphereMesh->meshBuffers]() {
-            destroy_buffer(buffers.indexBuffer);
-            destroy_buffer(buffers.vertexBuffer);
-        });
     }
 
     _mainDeletionQueue.push_function([=]() { destroy_buffer(matBuffer); });
