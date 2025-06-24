@@ -53,6 +53,8 @@ void VulkanEngine::init()
 
     init_sync_structures();
 
+    init_default_samplers();
+
     init_descriptors();
 
     init_pipelines();
@@ -110,17 +112,6 @@ void VulkanEngine::init_default_data()
     }
     _errorCheckerboardImage = create_image(pixels.data(), VkExtent3D{16, 16, 1}, VK_FORMAT_R8G8B8A8_UNORM,
                                            VK_IMAGE_USAGE_SAMPLED_BIT);
-
-    VkSamplerCreateInfo sampl = {.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
-
-    sampl.magFilter = VK_FILTER_NEAREST;
-    sampl.minFilter = VK_FILTER_NEAREST;
-
-    vkCreateSampler(_device, &sampl, nullptr, &_defaultSamplerNearest);
-
-    sampl.magFilter = VK_FILTER_LINEAR;
-    sampl.minFilter = VK_FILTER_LINEAR;
-    vkCreateSampler(_device, &sampl, nullptr, &_defaultSamplerLinear);
 
     //create a simple white material that we can use for generated meshes
     GLTFMetallic_Roughness::MaterialResources matResources{};
@@ -185,9 +176,6 @@ void VulkanEngine::init_default_data()
     _mainDeletionQueue.push_function([=]() { destroy_buffer(matBuffer); });
 
     _mainDeletionQueue.push_function([&]() {
-        vkDestroySampler(_device, _defaultSamplerNearest, nullptr);
-        vkDestroySampler(_device, _defaultSamplerLinear, nullptr);
-
         destroy_image(_whiteImage);
         destroy_image(_greyImage);
         destroy_image(_blackImage);
@@ -1252,6 +1240,25 @@ void VulkanEngine::init_sync_structures()
     _mainDeletionQueue.push_function([=]() { vkDestroyFence(_device, _immFence, nullptr); });
 }
 
+void VulkanEngine::init_default_samplers()
+{
+    VkSamplerCreateInfo sampl = {.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
+
+    sampl.magFilter = VK_FILTER_NEAREST;
+    sampl.minFilter = VK_FILTER_NEAREST;
+
+    vkCreateSampler(_device, &sampl, nullptr, &_defaultSamplerNearest);
+
+    sampl.magFilter = VK_FILTER_LINEAR;
+    sampl.minFilter = VK_FILTER_LINEAR;
+    vkCreateSampler(_device, &sampl, nullptr, &_defaultSamplerLinear);
+
+    _mainDeletionQueue.push_function([&]() {
+        vkDestroySampler(_device, _defaultSamplerNearest, nullptr);
+        vkDestroySampler(_device, _defaultSamplerLinear, nullptr);
+    });
+}
+
 void VulkanEngine::init_imgui()
 {
     VkDescriptorPoolSize pool_sizes[] = {
@@ -1315,9 +1322,9 @@ void VulkanEngine::init_pipelines()
 
     init_mesh_pipeline();
 
-    init_deferred_pipelines();
-
     metalRoughMaterial.build_pipelines(this);
+
+    init_deferred_pipelines();
 }
 
 void VulkanEngine::init_descriptors()
@@ -1475,9 +1482,13 @@ void GLTFMetallic_Roughness::build_pipelines(VulkanEngine *engine)
     transparentPipeline.pipeline = pipelineBuilder.build_pipeline(engine->_device);
 
     VkShaderModule gbufferFragShader;
-    if (!vkutil::load_shader_module("../shaders/gbuffer.frag.spv", engine->_device, &gbufferFragShader))
+    bool gbufferLoaded = vkutil::load_shader_module("../shaders/gbuffer.frag.spv", engine->_device, &gbufferFragShader);
+    if (!gbufferLoaded)
     {
-        fmt::println("Error when building gbuffer fragment shader module");
+        fmt::println("Failed to load gbuffer fragment shader");
+        vkDestroyShaderModule(engine->_device, meshFragShader, nullptr);
+        vkDestroyShaderModule(engine->_device, meshVertexShader, nullptr);
+        return;
     }
 
     PipelineBuilder gbufferBuilder;
@@ -1640,10 +1651,16 @@ void VulkanEngine::init_deferred_pipelines()
     VkShaderModule fullscreenVert;
     VkShaderModule lightingFrag;
 
-    vkutil::load_shader_module("../shaders/mesh.vert.spv", _device, &vertShader);
-    vkutil::load_shader_module("../shaders/gbuffer.frag.spv", _device, &gbufferFrag);
-    vkutil::load_shader_module("../shaders/fullscreen.vert.spv", _device, &fullscreenVert);
-    vkutil::load_shader_module("../shaders/deferred_lighting.frag.spv", _device, &lightingFrag);
+    bool vertLoaded = vkutil::load_shader_module("../shaders/mesh.vert.spv", _device, &vertShader);
+    bool gbufferLoaded = vkutil::load_shader_module("../shaders/gbuffer.frag.spv", _device, &gbufferFrag);
+    bool fullscreenLoaded = vkutil::load_shader_module("../shaders/fullscreen.vert.spv", _device, &fullscreenVert);
+    bool lightingLoaded = vkutil::load_shader_module("../shaders/deferred_lighting.frag.spv", _device, &lightingFrag);
+
+    if (!vertLoaded || !gbufferLoaded || !fullscreenLoaded || !lightingLoaded)
+    {
+        fmt::println("Failed to load deferred rendering shaders");
+        return;
+    }
 
     VkPushConstantRange range{};
     range.offset = 0;
