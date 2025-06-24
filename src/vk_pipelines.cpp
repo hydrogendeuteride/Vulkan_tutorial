@@ -55,6 +55,7 @@ void PipelineBuilder::clear()
     _renderInfo = {.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO};
 
     _shaderStages.clear();
+    _colorAttachmentFormats.clear();
 }
 
 VkPipeline PipelineBuilder::build_pipeline(VkDevice device)
@@ -184,9 +185,18 @@ void PipelineBuilder::enable_blending_alphablend()
 
 void PipelineBuilder::set_color_attachment_format(VkFormat format)
 {
-    _colorAttachmentformat = format;
+    _colorAttachmentFormats.clear();
+    _colorAttachmentFormats.push_back(format);
+
     _renderInfo.colorAttachmentCount = 1;
-    _renderInfo.pColorAttachmentFormats = &_colorAttachmentformat;
+    _renderInfo.pColorAttachmentFormats = _colorAttachmentFormats.data();
+}
+
+void PipelineBuilder::set_color_attachment_formats(std::span<VkFormat> formats)
+{
+    _colorAttachmentFormats.assign(formats.begin(), formats.end());
+    _renderInfo.colorAttachmentCount = (uint32_t)_colorAttachmentFormats.size();
+    _renderInfo.pColorAttachmentFormats = _colorAttachmentFormats.data();
 }
 
 void PipelineBuilder::set_depth_format(VkFormat format)

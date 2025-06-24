@@ -69,6 +69,7 @@ struct GLTFMetallic_Roughness
 {
 	MaterialPipeline opaquePipeline;
 	MaterialPipeline transparentPipeline;
+	MaterialPipeline gBufferPipeline;
 
 	VkDescriptorSetLayout materialLayout;
 
@@ -187,13 +188,11 @@ public:
 	VkPipelineLayout _meshPipelineLayout;
 	VkPipeline _meshPipeline;
 
-        GPUMeshBuffers rectangle;
-        DrawContext drawCommands;
+	GPUMeshBuffers rectangle;
+	DrawContext drawCommands;
 
-        std::vector<std::shared_ptr<MeshAsset> > testMeshes;
-
-        std::shared_ptr<MeshAsset> cubeMesh;
-        std::shared_ptr<MeshAsset> sphereMesh;
+	std::shared_ptr<MeshAsset> cubeMesh;
+	std::shared_ptr<MeshAsset> sphereMesh;
 
 
 	// immediate submit structures
@@ -217,6 +216,18 @@ public:
 
 	AllocatedImage _drawImage;
 	AllocatedImage _depthImage;
+	AllocatedImage _gBufferPosition;
+	AllocatedImage _gBufferNormal;
+	AllocatedImage _gBufferAlbedo;
+
+	VkDescriptorSetLayout _gbufferInputDescriptorLayout;
+	VkDescriptorSet _gBufferInputDescriptorSet;
+
+	VkPipelineLayout _gBufferPipelineLayout;
+	VkPipeline _gBufferPipeline;
+
+	VkPipelineLayout _lightingPipelineLayout;
+	VkPipeline _lightingPipeline;
 
 	std::unordered_map<std::string, std::shared_ptr<Node> > loadedNodes;
 
@@ -242,6 +253,8 @@ public:
 	void draw_background(VkCommandBuffer cmd);
 
 	void draw_geometry(VkCommandBuffer cmd);
+
+	void draw_lighting(VkCommandBuffer cmd);
 
 	void draw_imgui(VkCommandBuffer cmd, VkImageView targetImageView);
 
@@ -286,6 +299,8 @@ private:
 	void init_pipelines();
 
 	void init_mesh_pipeline();
+
+	void init_differed_pipeline();
 
 	void init_descriptors();
 

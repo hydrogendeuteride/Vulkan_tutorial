@@ -24,6 +24,7 @@ public:
     VkPipelineDepthStencilStateCreateInfo _depthStencil;
     VkPipelineRenderingCreateInfo _renderInfo;
     VkFormat _colorAttachmentformat;
+    std::vector<VkFormat> _colorAttachmentFormats;
 
     PipelineBuilder()
     { clear(); }
@@ -49,6 +50,7 @@ public:
     void enable_blending_alphablend();
 
     void set_color_attachment_format(VkFormat format);
+    void set_color_attachment_formats(std::span<VkFormat> formats);
 
     void set_depth_format(VkFormat format);
 

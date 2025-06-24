@@ -5,48 +5,67 @@
 
 #include <vk_types.h>
 
-namespace vkinit {
-//> init_cmd
-VkCommandPoolCreateInfo command_pool_create_info(uint32_t queueFamilyIndex, VkCommandPoolCreateFlags flags = 0);
-VkCommandBufferAllocateInfo command_buffer_allocate_info(VkCommandPool pool, uint32_t count = 1);
-//< init_cmd
+namespace vkinit
+{
+    //> init_cmd
+    VkCommandPoolCreateInfo command_pool_create_info(uint32_t queueFamilyIndex, VkCommandPoolCreateFlags flags = 0);
 
-VkCommandBufferBeginInfo command_buffer_begin_info(VkCommandBufferUsageFlags flags = 0);
-VkCommandBufferSubmitInfo command_buffer_submit_info(VkCommandBuffer cmd);
+    VkCommandBufferAllocateInfo command_buffer_allocate_info(VkCommandPool pool, uint32_t count = 1);
 
-VkFenceCreateInfo fence_create_info(VkFenceCreateFlags flags = 0);
+    //< init_cmd
 
-VkSemaphoreCreateInfo semaphore_create_info(VkSemaphoreCreateFlags flags = 0);
+    VkCommandBufferBeginInfo command_buffer_begin_info(VkCommandBufferUsageFlags flags = 0);
 
-VkSubmitInfo2 submit_info(VkCommandBufferSubmitInfo* cmd, VkSemaphoreSubmitInfo* signalSemaphoreInfo,
-    VkSemaphoreSubmitInfo* waitSemaphoreInfo);
-VkPresentInfoKHR present_info();
+    VkCommandBufferSubmitInfo command_buffer_submit_info(VkCommandBuffer cmd);
 
-VkRenderingAttachmentInfo attachment_info(VkImageView view, VkClearValue* clear, VkImageLayout layout /*= VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL*/);
+    VkFenceCreateInfo fence_create_info(VkFenceCreateFlags flags = 0);
 
-VkRenderingAttachmentInfo depth_attachment_info(VkImageView view,
-    VkImageLayout layout /*= VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL*/);
+    VkSemaphoreCreateInfo semaphore_create_info(VkSemaphoreCreateFlags flags = 0);
 
-VkRenderingInfo rendering_info(VkExtent2D renderExtent, VkRenderingAttachmentInfo* colorAttachment,
-    VkRenderingAttachmentInfo* depthAttachment);
+    VkSubmitInfo2 submit_info(VkCommandBufferSubmitInfo *cmd, VkSemaphoreSubmitInfo *signalSemaphoreInfo,
+                              VkSemaphoreSubmitInfo *waitSemaphoreInfo);
 
-VkImageSubresourceRange image_subresource_range(VkImageAspectFlags aspectMask);
+    VkPresentInfoKHR present_info();
 
-VkSemaphoreSubmitInfo semaphore_submit_info(VkPipelineStageFlags2 stageMask, VkSemaphore semaphore);
-VkDescriptorSetLayoutBinding descriptorset_layout_binding(VkDescriptorType type, VkShaderStageFlags stageFlags,
-    uint32_t binding);
-VkDescriptorSetLayoutCreateInfo descriptorset_layout_create_info(VkDescriptorSetLayoutBinding* bindings,
-    uint32_t bindingCount);
-VkWriteDescriptorSet write_descriptor_image(VkDescriptorType type, VkDescriptorSet dstSet,
-    VkDescriptorImageInfo* imageInfo, uint32_t binding);
-VkWriteDescriptorSet write_descriptor_buffer(VkDescriptorType type, VkDescriptorSet dstSet,
-    VkDescriptorBufferInfo* bufferInfo, uint32_t binding);
-VkDescriptorBufferInfo buffer_info(VkBuffer buffer, VkDeviceSize offset, VkDeviceSize range);
+    VkRenderingAttachmentInfo attachment_info(VkImageView view, VkClearValue *clear,
+                                              VkImageLayout layout /*= VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL*/);
 
-VkImageCreateInfo image_create_info(VkFormat format, VkImageUsageFlags usageFlags, VkExtent3D extent);
-VkImageViewCreateInfo imageview_create_info(VkFormat format, VkImage image, VkImageAspectFlags aspectFlags);
-VkPipelineLayoutCreateInfo pipeline_layout_create_info();
-VkPipelineShaderStageCreateInfo pipeline_shader_stage_create_info(VkShaderStageFlagBits stage,
-    VkShaderModule shaderModule,
-    const char * entry = "main");
+    VkRenderingAttachmentInfo depth_attachment_info(VkImageView view,
+                                                    VkImageLayout layout
+                                                    /*= VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL*/);
+
+    VkRenderingInfo rendering_info(VkExtent2D renderExtent, VkRenderingAttachmentInfo *colorAttachment,
+                                   VkRenderingAttachmentInfo *depthAttachment);
+
+    VkRenderingInfo rendering_info_multi(VkExtent2D renderExtent, uint32_t colorCount,
+                                         VkRenderingAttachmentInfo *colorAttachments,
+                                         VkRenderingAttachmentInfo *depthAttachment);
+
+    VkImageSubresourceRange image_subresource_range(VkImageAspectFlags aspectMask);
+
+    VkSemaphoreSubmitInfo semaphore_submit_info(VkPipelineStageFlags2 stageMask, VkSemaphore semaphore);
+
+    VkDescriptorSetLayoutBinding descriptorset_layout_binding(VkDescriptorType type, VkShaderStageFlags stageFlags,
+                                                              uint32_t binding);
+
+    VkDescriptorSetLayoutCreateInfo descriptorset_layout_create_info(VkDescriptorSetLayoutBinding *bindings,
+                                                                     uint32_t bindingCount);
+
+    VkWriteDescriptorSet write_descriptor_image(VkDescriptorType type, VkDescriptorSet dstSet,
+                                                VkDescriptorImageInfo *imageInfo, uint32_t binding);
+
+    VkWriteDescriptorSet write_descriptor_buffer(VkDescriptorType type, VkDescriptorSet dstSet,
+                                                 VkDescriptorBufferInfo *bufferInfo, uint32_t binding);
+
+    VkDescriptorBufferInfo buffer_info(VkBuffer buffer, VkDeviceSize offset, VkDeviceSize range);
+
+    VkImageCreateInfo image_create_info(VkFormat format, VkImageUsageFlags usageFlags, VkExtent3D extent);
+
+    VkImageViewCreateInfo imageview_create_info(VkFormat format, VkImage image, VkImageAspectFlags aspectFlags);
+
+    VkPipelineLayoutCreateInfo pipeline_layout_create_info();
+
+    VkPipelineShaderStageCreateInfo pipeline_shader_stage_create_info(VkShaderStageFlagBits stage,
+                                                                      VkShaderModule shaderModule,
+                                                                      const char *entry = "main");
 } // namespace vkinit
