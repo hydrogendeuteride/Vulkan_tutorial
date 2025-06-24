@@ -220,7 +220,7 @@ public:
 	AllocatedImage _gBufferNormal;
 	AllocatedImage _gBufferAlbedo;
 
-	VkDescriptorSetLayout _gbufferInputDescriptorLayout;
+	VkDescriptorSetLayout _gBufferInputDescriptorLayout;
 	VkDescriptorSet _gBufferInputDescriptorSet;
 
 	VkPipelineLayout _gBufferPipelineLayout;
@@ -300,7 +300,7 @@ private:
 
 	void init_mesh_pipeline();
 
-	void init_differed_pipeline();
+	void init_deferred_pipelines();
 
 	void init_descriptors();
 

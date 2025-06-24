@@ -373,7 +373,14 @@ void VulkanEngine::draw()
 
     // transition our main draw image into general layout so we can write into it
     // we will overwrite it all so we dont care about what was the older layout
-    vkutil::transition_image(cmd, _drawImage.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+    vkutil::transition_image(cmd, _gBufferPosition.image, VK_IMAGE_LAYOUT_UNDEFINED,
+                             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    vkutil::transition_image(cmd, _gBufferNormal.image, VK_IMAGE_LAYOUT_UNDEFINED,
+                             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    vkutil::transition_image(cmd, _gBufferAlbedo.image, VK_IMAGE_LAYOUT_UNDEFINED,
+                             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    vkutil::transition_image(cmd, _depthImage.image, VK_IMAGE_LAYOUT_UNDEFINED,
+                             VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 
     draw_background(cmd);
 
@@ -386,6 +393,18 @@ void VulkanEngine::draw()
     //     vkutil::transition_image(cmd, _gBufferAlbedo.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
     //
     draw_geometry(cmd);
+
+    vkutil::transition_image(cmd, _gBufferPosition.image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                             VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    vkutil::transition_image(cmd, _gBufferNormal.image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                             VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    vkutil::transition_image(cmd, _gBufferAlbedo.image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                             VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+    vkutil::transition_image(cmd, _drawImage.image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+    draw_lighting(cmd);
+
 
     //transtion the draw image and the swapchain image into their correct transfer layouts
     vkutil::transition_image(cmd, _drawImage.image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
@@ -514,12 +533,18 @@ void VulkanEngine::draw_geometry(VkCommandBuffer cmd)
     });
 
     //begin a render pass  connected to our draw image
-    VkRenderingAttachmentInfo colorAttachment = vkinit::attachment_info(_drawImage.imageView, nullptr,
-                                                                        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    VkRenderingAttachmentInfo gbufferAttachments[3];
+    gbufferAttachments[0] = vkinit::attachment_info(_gBufferPosition.imageView, nullptr,
+                                                    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    gbufferAttachments[1] = vkinit::attachment_info(_gBufferNormal.imageView, nullptr,
+                                                    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    gbufferAttachments[2] = vkinit::attachment_info(_gBufferAlbedo.imageView, nullptr,
+                                                    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
     VkRenderingAttachmentInfo depthAttachment = vkinit::depth_attachment_info(
         _depthImage.imageView, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 
-    VkRenderingInfo renderInfo = vkinit::rendering_info(_drawExtent, &colorAttachment, &depthAttachment);
+    VkRenderingInfo renderInfo = vkinit::rendering_info_multi(_drawExtent, 3, gbufferAttachments, &depthAttachment);
     vkCmdBeginRendering(cmd, &renderInfo);
 
     //allocate a new uniform buffer for the scene data
@@ -1110,6 +1135,13 @@ void VulkanEngine::init_swapchain()
                                                                      VK_IMAGE_ASPECT_DEPTH_BIT);
 
     VK_CHECK(vkCreateImageView(_device, &dview_info, nullptr, &_depthImage.imageView));
+
+    _gBufferPosition = create_image(drawImageExtent, VK_FORMAT_R16G16B16A16_SFLOAT,
+                                    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
+    _gBufferNormal = create_image(drawImageExtent, VK_FORMAT_R16G16B16A16_SFLOAT,
+                                  VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
+    _gBufferAlbedo = create_image(drawImageExtent, VK_FORMAT_R8G8B8A8_UNORM,
+                                  VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
     //< depthimg
     //add to deletion queues
     _mainDeletionQueue.push_function([=]() {
@@ -1118,6 +1150,10 @@ void VulkanEngine::init_swapchain()
 
         vkDestroyImageView(_device, _depthImage.imageView, nullptr);
         vmaDestroyImage(_allocator, _depthImage.image, _depthImage.allocation);
+
+        destroy_image(_gBufferPosition);
+        destroy_image(_gBufferNormal);
+        destroy_image(_gBufferAlbedo);
     });
 }
 
@@ -1279,7 +1315,7 @@ void VulkanEngine::init_pipelines()
 
     init_mesh_pipeline();
 
-    init_differed_pipeline();
+    init_deferred_pipelines();
 
     metalRoughMaterial.build_pipelines(this);
 }
@@ -1309,6 +1345,12 @@ void VulkanEngine::init_descriptors()
         builder.add_binding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
         _gpuSceneDataDescriptorLayout = builder.build(
             _device, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
+    } {
+        DescriptorLayoutBuilder builder;
+        builder.add_binding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+        builder.add_binding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+        builder.add_binding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+        _gBufferInputDescriptorLayout = builder.build(_device, VK_SHADER_STAGE_FRAGMENT_BIT);
     }
     //allocate a descriptor set for our draw image
     _drawImageDescriptors = globalDescriptorAllocator.allocate(_device, _drawImageDescriptorLayout); {
@@ -1319,6 +1361,17 @@ void VulkanEngine::init_descriptors()
         writer.update_set(_device, _drawImageDescriptors);
     }
 
+    _gBufferInputDescriptorSet = globalDescriptorAllocator.allocate(_device, _gBufferInputDescriptorLayout); {
+        DescriptorWriter writer;
+        writer.write_image(0, _gBufferPosition.imageView, _defaultSamplerLinear,
+                           VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+        writer.write_image(1, _gBufferNormal.imageView, _defaultSamplerLinear, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                           VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+        writer.write_image(2, _gBufferAlbedo.imageView, _defaultSamplerLinear, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                           VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+        writer.update_set(_device, _gBufferInputDescriptorSet);
+    }
+
     //make sure both the descriptor allocator and the new layout get cleaned up properly
     _mainDeletionQueue.push_function([&]() {
         globalDescriptorAllocator.destroy_pools(_device);
@@ -1326,6 +1379,7 @@ void VulkanEngine::init_descriptors()
         vkDestroyDescriptorSetLayout(_device, _drawImageDescriptorLayout, nullptr);
         vkDestroyDescriptorSetLayout(_device, _singleImageDescriptorLayout, nullptr);
         vkDestroyDescriptorSetLayout(_device, _gpuSceneDataDescriptorLayout, nullptr);
+        vkDestroyDescriptorSetLayout(_device, _gBufferInputDescriptorLayout, nullptr);
     });
 
     //> frame_desc
@@ -1420,6 +1474,31 @@ void GLTFMetallic_Roughness::build_pipelines(VulkanEngine *engine)
 
     transparentPipeline.pipeline = pipelineBuilder.build_pipeline(engine->_device);
 
+    VkShaderModule gbufferFragShader;
+    if (!vkutil::load_shader_module("../shaders/gbuffer.frag.spv", engine->_device, &gbufferFragShader))
+    {
+        fmt::println("Error when building gbuffer fragment shader module");
+    }
+
+    PipelineBuilder gbufferBuilder;
+    gbufferBuilder.set_shaders(meshVertexShader, gbufferFragShader);
+    gbufferBuilder.set_input_topology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+    gbufferBuilder.set_polygon_mode(VK_POLYGON_MODE_FILL);
+    gbufferBuilder.set_cull_mode(VK_CULL_MODE_NONE, VK_FRONT_FACE_CLOCKWISE);
+    gbufferBuilder.set_multisampling_none();
+    gbufferBuilder.disable_blending();
+    gbufferBuilder.enable_depthtest(true, VK_COMPARE_OP_GREATER_OR_EQUAL);
+    VkFormat gFormats[] = {
+        engine->_gBufferPosition.imageFormat, engine->_gBufferNormal.imageFormat, engine->_gBufferAlbedo.imageFormat
+    };
+    gbufferBuilder.set_color_attachment_formats(std::span<VkFormat>(gFormats, 3));
+    gbufferBuilder.set_depth_format(engine->_depthImage.imageFormat);
+    gbufferBuilder._pipelineLayout = newLayout;
+    gBufferPipeline.pipeline = gbufferBuilder.build_pipeline(engine->_device);
+    gBufferPipeline.layout = newLayout;
+
+    vkDestroyShaderModule(engine->_device, gbufferFragShader, nullptr);
+
     vkDestroyShaderModule(engine->_device, meshFragShader, nullptr);
     vkDestroyShaderModule(engine->_device, meshVertexShader, nullptr);
 }
@@ -1431,6 +1510,7 @@ void GLTFMetallic_Roughness::clear_resources(VkDevice device)
 
     vkDestroyPipeline(device, transparentPipeline.pipeline, nullptr);
     vkDestroyPipeline(device, opaquePipeline.pipeline, nullptr);
+    vkDestroyPipeline(device, gBufferPipeline.pipeline, nullptr);
 }
 
 MaterialInstance GLTFMetallic_Roughness::write_material(VkDevice device, MaterialPass pass,
@@ -1445,7 +1525,7 @@ MaterialInstance GLTFMetallic_Roughness::write_material(VkDevice device, Materia
     }
     else
     {
-        matData.pipeline = &opaquePipeline;
+        matData.pipeline = &gBufferPipeline;
     }
 
     matData.materialSet = descriptorAllocator.allocate(device, materialLayout);
@@ -1553,16 +1633,16 @@ void VulkanEngine::init_mesh_pipeline()
     });
 }
 
-void VulkanEngine::init_differed_pipeline()
+void VulkanEngine::init_deferred_pipelines()
 {
     VkShaderModule vertShader;
-    VkShaderModule gBufferFrag;
-    VkShaderModule fullScreenVert;
+    VkShaderModule gbufferFrag;
+    VkShaderModule fullscreenVert;
     VkShaderModule lightingFrag;
 
     vkutil::load_shader_module("../shaders/mesh.vert.spv", _device, &vertShader);
-    vkutil::load_shader_module("../shaders/gbuffer.frag.spv", _device, &gBufferFrag);
-    vkutil::load_shader_module("../shaders/fullscreen.vert.spv", _device, &fullScreenVert);
+    vkutil::load_shader_module("../shaders/gbuffer.frag.spv", _device, &gbufferFrag);
+    vkutil::load_shader_module("../shaders/fullscreen.vert.spv", _device, &fullscreenVert);
     vkutil::load_shader_module("../shaders/deferred_lighting.frag.spv", _device, &lightingFrag);
 
     VkPushConstantRange range{};
@@ -1580,7 +1660,7 @@ void VulkanEngine::init_differed_pipeline()
 
     PipelineBuilder builder;
     builder._pipelineLayout = _gBufferPipelineLayout;
-    builder.set_shaders(vertShader, gBufferFrag);
+    builder.set_shaders(vertShader, gbufferFrag);
     builder.set_input_topology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
     builder.set_polygon_mode(VK_POLYGON_MODE_FILL);
     builder.set_cull_mode(VK_CULL_MODE_NONE, VK_FRONT_FACE_CLOCKWISE);
@@ -1592,7 +1672,7 @@ void VulkanEngine::init_differed_pipeline()
     builder.set_depth_format(_depthImage.imageFormat);
     _gBufferPipeline = builder.build_pipeline(_device);
 
-    VkDescriptorSetLayout lLayouts[] = { _gpuSceneDataDescriptorLayout, _gbufferInputDescriptorLayout};
+    VkDescriptorSetLayout lLayouts[] = {_gpuSceneDataDescriptorLayout, _gBufferInputDescriptorLayout};
     VkPipelineLayoutCreateInfo lightLayoutInfo = vkinit::pipeline_layout_create_info();
     lightLayoutInfo.setLayoutCount = 2;
     lightLayoutInfo.pSetLayouts = lLayouts;
@@ -1600,7 +1680,7 @@ void VulkanEngine::init_differed_pipeline()
 
     builder.clear();
     builder._pipelineLayout = _lightingPipelineLayout;
-    builder.set_shaders(fullScreenVert, lightingFrag);
+    builder.set_shaders(fullscreenVert, lightingFrag);
     builder.set_input_topology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
     builder.set_polygon_mode(VK_POLYGON_MODE_FILL);
     builder.set_cull_mode(VK_CULL_MODE_NONE, VK_FRONT_FACE_CLOCKWISE);
@@ -1611,8 +1691,8 @@ void VulkanEngine::init_differed_pipeline()
     _lightingPipeline = builder.build_pipeline(_device);
 
     vkDestroyShaderModule(_device, vertShader, nullptr);
-    vkDestroyShaderModule(_device, gBufferFrag, nullptr);
-    vkDestroyShaderModule(_device, fullScreenVert, nullptr);
+    vkDestroyShaderModule(_device, gbufferFrag, nullptr);
+    vkDestroyShaderModule(_device, fullscreenVert, nullptr);
     vkDestroyShaderModule(_device, lightingFrag, nullptr);
 
     _mainDeletionQueue.push_function([&]() {
