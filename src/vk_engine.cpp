@@ -359,8 +359,8 @@ void VulkanEngine::draw()
     //---------------------------
     VK_CHECK(vkBeginCommandBuffer(cmd, &cmdBeginInfo));
 
-    // transition our main draw image into general layout so we can write into it
-    // we will overwrite it all so we dont care about what was the older layout
+    // transition gbuffer images and depth so we can write into them
+    // we will overwrite them completely so we dont care about previous contents
     vkutil::transition_image(cmd, _gBufferPosition.image, VK_IMAGE_LAYOUT_UNDEFINED,
                              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
     vkutil::transition_image(cmd, _gBufferNormal.image, VK_IMAGE_LAYOUT_UNDEFINED,
@@ -370,16 +370,14 @@ void VulkanEngine::draw()
     vkutil::transition_image(cmd, _depthImage.image, VK_IMAGE_LAYOUT_UNDEFINED,
                              VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 
+    vkutil::transition_image(cmd, _drawImage.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                            VK_IMAGE_LAYOUT_GENERAL);
+
     draw_background(cmd);
 
     vkutil::transition_image(cmd, _drawImage.image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
     vkutil::transition_image(cmd, _depthImage.image, VK_IMAGE_LAYOUT_UNDEFINED,
                              VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
-
-    //     vkutil::transition_image(cmd, _gBufferPosition.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-    //     vkutil::transition_image(cmd, _gBufferNormal.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-    //     vkutil::transition_image(cmd, _gBufferAlbedo.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-    //
     draw_geometry(cmd);
 
     vkutil::transition_image(cmd, _gBufferPosition.image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
@@ -397,11 +395,6 @@ void VulkanEngine::draw()
     //transtion the draw image and the swapchain image into their correct transfer layouts
     vkutil::transition_image(cmd, _drawImage.image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                              VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-    //
-    //     vkutil::transition_image(cmd, _gBufferPosition.image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-    //     vkutil::transition_image(cmd, _gBufferNormal.image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-    //     vkutil::transition_image(cmd, _gBufferAlbedo.image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-    //
     vkutil::transition_image(cmd, _swapchainImages[swapchainImageIndex], VK_IMAGE_LAYOUT_UNDEFINED,
                              VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
@@ -522,11 +515,13 @@ void VulkanEngine::draw_geometry(VkCommandBuffer cmd)
 
     //begin a render pass  connected to our draw image
     VkRenderingAttachmentInfo gbufferAttachments[3];
-    gbufferAttachments[0] = vkinit::attachment_info(_gBufferPosition.imageView, nullptr,
+    VkClearValue gbufferClear{};
+    gbufferClear.color = {{0.f, 0.f, 0.f, 0.f}};
+    gbufferAttachments[0] = vkinit::attachment_info(_gBufferPosition.imageView, &gbufferClear,
                                                     VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-    gbufferAttachments[1] = vkinit::attachment_info(_gBufferNormal.imageView, nullptr,
+    gbufferAttachments[1] = vkinit::attachment_info(_gBufferNormal.imageView, &gbufferClear,
                                                     VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-    gbufferAttachments[2] = vkinit::attachment_info(_gBufferAlbedo.imageView, nullptr,
+    gbufferAttachments[2] = vkinit::attachment_info(_gBufferAlbedo.imageView, &gbufferClear,
                                                     VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
     VkRenderingAttachmentInfo depthAttachment = vkinit::depth_attachment_info(
@@ -1702,7 +1697,7 @@ void VulkanEngine::init_deferred_pipelines()
     builder.set_polygon_mode(VK_POLYGON_MODE_FILL);
     builder.set_cull_mode(VK_CULL_MODE_NONE, VK_FRONT_FACE_CLOCKWISE);
     builder.set_multisampling_none();
-    builder.disable_blending();
+    builder.enable_blending_alphablend();
     builder.disable_depthtest();
     builder.set_color_attachment_format(_drawImage.imageFormat);
     _lightingPipeline = builder.build_pipeline(_device);
