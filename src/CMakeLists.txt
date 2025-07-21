@@ -11,6 +11,7 @@ add_executable (engine
   vk_descriptors.cpp
   vk_pipelines.h
   vk_pipelines.cpp
+  vk_compute.cpp
   vk_engine.h
   vk_engine.cpp
   vk_loader.h

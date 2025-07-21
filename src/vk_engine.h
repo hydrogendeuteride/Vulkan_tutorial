@@ -10,6 +10,7 @@
 #include <functional>
 #include "vk_descriptors.h"
 #include "vk_loader.h"
+#include "vk_compute.h"
 #include <camera.h>
 
 struct DeletionQueue
@@ -58,10 +59,6 @@ struct ComputePushConstants
 struct ComputeEffect
 {
 	const char *name;
-
-	VkPipeline pipeline;
-	VkPipelineLayout layout;
-
 	ComputePushConstants data;
 };
 
@@ -95,7 +92,7 @@ struct GLTFMetallic_Roughness
 
 	void build_pipelines(VulkanEngine *engine);
 
-	void clear_resources(VkDevice device);
+	void clear_resources(VkDevice device) const;
 
 	MaterialInstance write_material(VkDevice device, MaterialPass pass, const MaterialResources &resources,
 	                                DescriptorAllocatorGrowable &descriptorAllocator);
@@ -169,16 +166,12 @@ public:
 	float renderScale = 1.f;
 
 	DescriptorAllocatorGrowable globalDescriptorAllocator;
-
-	VkPipeline _gradientPipeline;
-	VkPipelineLayout _gradientPipelineLayout;
+	ComputeManager compute;
 
 	std::vector<VkFramebuffer> _framebuffers;
 	std::vector<VkImage> _swapchainImages;
 	std::vector<VkImageView> _swapchainImageViews;
 
-	VkDescriptorSet _drawImageDescriptors;
-	VkDescriptorSetLayout _drawImageDescriptorLayout;
 	VkDescriptorSetLayout _singleImageDescriptorLayout;
 
 	DeletionQueue _mainDeletionQueue;
@@ -256,27 +249,27 @@ public:
 
 	void draw_lighting(VkCommandBuffer cmd);
 
-	void draw_imgui(VkCommandBuffer cmd, VkImageView targetImageView);
+	void draw_imgui(VkCommandBuffer cmd, VkImageView targetImageView) const;
 
 	void update_scene();
 
 	//run main loop
 	void run();
 
-	void immediate_submit(std::function<void(VkCommandBuffer cmd)> &&function);
+	void immediate_submit(std::function<void(VkCommandBuffer cmd)> &&function) const;
 
-	GPUMeshBuffers uploadMesh(std::span<uint32_t> indices, std::span<Vertex> vertices);
+	GPUMeshBuffers uploadMesh(std::span<uint32_t> indices, std::span<Vertex> vertices) const;
 
-	AllocatedBuffer create_buffer(size_t allocSize, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage);
+	AllocatedBuffer create_buffer(size_t allocSize, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage) const;
 
-	AllocatedImage create_image(VkExtent3D size, VkFormat format, VkImageUsageFlags usage, bool mipmapped = false);
+	AllocatedImage create_image(VkExtent3D size, VkFormat format, VkImageUsageFlags usage, bool mipmapped = false) const;
 
-	AllocatedImage create_image(void *data, VkExtent3D size, VkFormat format, VkImageUsageFlags usage,
-	                            bool mipmapped = false);
+	AllocatedImage create_image(const void *data, VkExtent3D size, VkFormat format, VkImageUsageFlags usage,
+	                            bool mipmapped = false) const;
 
-	void destroy_image(const AllocatedImage &img);
+	void destroy_image(const AllocatedImage &img) const;
 
-	void destroy_buffer(const AllocatedBuffer &buffer);
+	void destroy_buffer(const AllocatedBuffer &buffer) const;
 
 	bool resize_requested{false};
 	bool freeze_rendering{false};
@@ -288,7 +281,7 @@ private:
 
 	void create_swapchain(uint32_t width, uint32_t height);
 
-	void destroy_swapchain();
+	void destroy_swapchain() const;
 
 	void resize_swapchain();
 

@@ -32,13 +32,13 @@ ComputeBinding ComputeBinding::sampledImage(uint32_t binding, VkImageView imageV
     ComputeBinding result;
     result.binding = binding;
     result.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    result.image.imageView = imageView;
+    result.storageImage.imageView = imageView;
     result.image.sampler = sampler;
-    result.image.layout = layout;
+    result.storageImage.layout = layout;
     return result;
 }
 
-ComputeBinding ComputeBinding::storageImage(uint32_t binding, VkImageView imageView, VkImageLayout layout)
+ComputeBinding ComputeBinding::storeImage(uint32_t binding, VkImageView imageView, VkImageLayout layout)
 {
     ComputeBinding result;
     result.binding = binding;
@@ -125,8 +125,6 @@ void ComputeManager::init(VulkanEngine *engine)
     };
 
     descriptorAllocator.init(engine->_device, 100, poolSizes);
-
-    registerBuiltinPipelines();
 }
 
 void ComputeManager::cleanup()
@@ -240,7 +238,7 @@ void ComputeManager::clearImage(VkCommandBuffer cmd, VkImageView imageView, cons
     }
 
     ComputeDispatchInfo dispatchInfo;
-    dispatchInfo.bindings.push_back(ComputeBinding::storageImage(0, imageView));
+    dispatchInfo.bindings.push_back(ComputeBinding::storeImage(0, imageView));
     dispatchInfo.pushConstants = &clearColor;
     dispatchInfo.pushConstantSize = sizeof(glm::vec4);
 
@@ -381,8 +379,8 @@ void ComputeManager::updateDescriptorSet(VkDescriptorSet descriptorSet, const st
                 break;
 
             case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
-                writer.write_image(binding.binding, binding.image.imageView, binding.image.sampler,
-                                   binding.image.layout, binding.type);
+                writer.write_image(binding.binding, binding.storageImage.imageView, binding.image.sampler,
+                                   binding.storageImage.layout, binding.type);
                 break;
 
             case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
