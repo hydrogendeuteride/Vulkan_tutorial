@@ -1,0 +1,106 @@
+// vk_renderpass_manager.h
+#pragma once
+#include "vk_types.h"
+#include "vk_compute.h"
+
+
+struct RenderContext
+{
+    VkCommandBuffer cmd;
+    VkExtent2D extent;
+    SceneManager *scene;
+    ResourceManager *resources;
+    const GPUSceneData *sceneData;
+
+    DescriptorAllocatorGrowable *frameDescriptors;
+    std::function<void(std::function<void()>)> addFrameDeletion;
+};
+
+class RenderPass
+{
+public:
+    virtual ~RenderPass() = default;
+
+    virtual void initialize(VulkanRenderer *renderer)
+    {
+    }
+
+    virtual void cleanup()
+    {
+    }
+
+    virtual void execute(const RenderContext &ctx) = 0;
+
+    virtual bool isEnabled() const { return enabled; }
+    void setEnabled(bool value) { enabled = value; }
+
+protected:
+    bool enabled = true;
+};
+
+class GBufferPass : public RenderPass
+{
+private:
+    VulkanRenderer *renderer;
+
+    VkPipeline pipeline;
+    VkPipelineLayout pipelineLayout;
+    VkDescriptorSetLayout descriptorLayout;
+
+public:
+    void initialize(VulkanRenderer *renderer) override;
+
+    void execute(const RenderContext &ctx) override;
+};
+
+class DeferredLightingPass : public RenderPass
+{
+private:
+    VulkanRenderer *renderer;
+    VkPipeline lightingPipeline;
+    VkPipelineLayout lightingPipelineLayout;
+    VkDescriptorSet gBufferInputDescriptorSet;
+
+public:
+    void initialize(VulkanRenderer *renderer) override;
+
+    void execute(const RenderContext &ctx) override;
+};
+
+class BackgroundPass : public RenderPass
+{
+private:
+    ComputeManager *compute;
+    std::vector<ComputeEffect> effects;
+    int currentEffect = 0;
+
+public:
+    void initialize(VulkanRenderer *renderer) override;
+
+    void execute(const RenderContext &ctx) override;
+
+    void setEffect(int index) { currentEffect = index; }
+};
+
+class RenderPassManager
+{
+private:
+    std::vector<std::unique_ptr<RenderPass> > passes;
+    DrawContext drawContext;
+
+public:
+    void init(VulkanRenderer *renderer);
+
+    void cleanup();
+
+    template<typename T>
+    T *addPass()
+    {
+        auto pass = std::make_unique<T>();
+        T *ptr = pass.get();
+        passes.push_back(std::move(pass));
+        return ptr;
+    }
+
+    void executeAll(VkCommandBuffer cmd, VkExtent2D extent, SceneManager *scene, ResourceManager *resources);
+};

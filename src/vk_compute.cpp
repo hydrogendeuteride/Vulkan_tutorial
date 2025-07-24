@@ -1,5 +1,5 @@
 #include <vk_compute.h>
-#include <vk_engine.h>
+#include <vk_renderer.h>
 #include <vk_pipelines.h>
 #include <vk_initializers.h>
 #include <iostream>
@@ -113,9 +113,9 @@ ComputeManager::~ComputeManager()
     cleanup();
 }
 
-void ComputeManager::init(VulkanEngine *engine)
+void ComputeManager::init(VulkanRenderer *renderer)
 {
-    this->engine = engine;
+    this->renderer = renderer;
 
     std::vector<DescriptorAllocatorGrowable::PoolSizeRatio> poolSizes = {
         {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 4},
@@ -124,19 +124,19 @@ void ComputeManager::init(VulkanEngine *engine)
         {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 4}
     };
 
-    descriptorAllocator.init(engine->_device, 100, poolSizes);
+    descriptorAllocator.init(renderer->_device, 100, poolSizes);
 }
 
 void ComputeManager::cleanup()
 {
     pipelines.clear();
 
-    if (engine)
+    if (renderer)
     {
-        descriptorAllocator.destroy_pools(engine->_device);
+        descriptorAllocator.destroy_pools(renderer->_device);
     }
 
-    engine = nullptr;
+    renderer = nullptr;
 }
 
 bool ComputeManager::registerPipeline(const std::string &name, const ComputePipelineCreateInfo &createInfo)
@@ -196,7 +196,7 @@ void ComputeManager::dispatch(VkCommandBuffer cmd, const std::string &pipelineNa
 
 void ComputeManager::dispatchImmediate(const std::string &pipelineName, const ComputeDispatchInfo &dispatchInfo)
 {
-    engine->immediate_submit([this, pipelineName, dispatchInfo](VkCommandBuffer cmd) {
+    renderer->immediate_submit([this, pipelineName, dispatchInfo](VkCommandBuffer cmd) {
         dispatch(cmd, pipelineName, dispatchInfo);
     });
 }
@@ -279,10 +279,10 @@ void ComputeManager::copyBuffer(VkCommandBuffer cmd, VkBuffer src, VkBuffer dst,
 bool ComputeManager::createPipeline(const std::string &name, const ComputePipelineCreateInfo &createInfo)
 {
     ComputePipeline computePipeline;
-    computePipeline.device = engine->_device;
+    computePipeline.device = renderer->_device;
 
     VkShaderModule shaderModule;
-    if (!vkutil::load_shader_module(createInfo.shaderPath.c_str(), engine->_device, &shaderModule))
+    if (!vkutil::load_shader_module(createInfo.shaderPath.c_str(), renderer->_device, &shaderModule))
     {
         std::cerr << "Failed to load compute shader: " << createInfo.shaderPath << std::endl;
         return false;
@@ -295,7 +295,7 @@ bool ComputeManager::createPipeline(const std::string &name, const ComputePipeli
         {
             layoutBuilder.add_binding(i, createInfo.descriptorTypes[i]);
         }
-        computePipeline.descriptorLayout = layoutBuilder.build(engine->_device, VK_SHADER_STAGE_COMPUTE_BIT);
+        computePipeline.descriptorLayout = layoutBuilder.build(renderer->_device, VK_SHADER_STAGE_COMPUTE_BIT);
     }
 
     VkPipelineLayoutCreateInfo layoutInfo = vkinit::pipeline_layout_create_info();
@@ -317,7 +317,7 @@ bool ComputeManager::createPipeline(const std::string &name, const ComputePipeli
         layoutInfo.pPushConstantRanges = &pushConstantRange;
     }
 
-    VK_CHECK(vkCreatePipelineLayout(engine->_device, &layoutInfo, nullptr, &computePipeline.layout));
+    VK_CHECK(vkCreatePipelineLayout(renderer->_device, &layoutInfo, nullptr, &computePipeline.layout));
 
     VkPipelineShaderStageCreateInfo stageInfo = vkinit::pipeline_shader_stage_create_info(
         VK_SHADER_STAGE_COMPUTE_BIT, shaderModule);
@@ -338,10 +338,10 @@ bool ComputeManager::createPipeline(const std::string &name, const ComputePipeli
     pipelineInfo.layout = computePipeline.layout;
 
     VK_CHECK(
-        vkCreateComputePipelines(engine->_device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &computePipeline.pipeline))
+        vkCreateComputePipelines(renderer->_device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &computePipeline.pipeline))
     ;
 
-    vkDestroyShaderModule(engine->_device, shaderModule, nullptr);
+    vkDestroyShaderModule(renderer->_device, shaderModule, nullptr);
 
     pipelines[name] = std::move(computePipeline);
 
@@ -356,7 +356,7 @@ VkDescriptorSet ComputeManager::allocateDescriptorSet(const ComputePipeline &pip
         return VK_NULL_HANDLE;
     }
 
-    return descriptorAllocator.allocate(engine->_device, pipeline.descriptorLayout);
+    return descriptorAllocator.allocate(renderer->_device, pipeline.descriptorLayout);
 }
 
 void ComputeManager::updateDescriptorSet(VkDescriptorSet descriptorSet, const std::vector<ComputeBinding> &bindings)
@@ -394,7 +394,7 @@ void ComputeManager::updateDescriptorSet(VkDescriptorSet descriptorSet, const st
         }
     }
 
-    writer.update_set(engine->_device, descriptorSet);
+    writer.update_set(renderer->_device, descriptorSet);
 }
 
 void ComputeManager::insertBarriers(VkCommandBuffer cmd, const ComputeDispatchInfo &dispatchInfo)

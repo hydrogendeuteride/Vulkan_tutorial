@@ -5,7 +5,7 @@
 #include <functional>
 #include <unordered_map>
 
-class VulkanEngine;
+class VulkanRenderer;
 
 struct ComputeBinding
 {
@@ -111,7 +111,7 @@ public:
 
     ~ComputeManager();
 
-    void init(VulkanEngine *engine);
+    void init(VulkanRenderer *renderer);
 
     void cleanup();
 
@@ -135,7 +135,7 @@ public:
                     VkDeviceSize dstOffset = 0);
 
 private:
-    VulkanEngine *engine = nullptr;
+    VulkanRenderer *renderer = nullptr;
     std::unordered_map<std::string, ComputePipeline> pipelines;
     DescriptorAllocatorGrowable descriptorAllocator;
 
