@@ -1,4 +1,48 @@
 #include "vk_scene_manager.h"
+#include <algorithm>
+
+void SceneManager::init()
+{
+    sceneData.ambientColor = glm::vec4(0.1f, 0.1f, 0.1f, 1.0f);
+    sceneData.sunlightDirection = glm::vec4(-1.0f, -1.0f, -1.0f, 1.0f);
+    sceneData.sunlightColor = glm::vec4(1.0f, 1.0f, 1.0f, 3.0f);
+}
+
+void SceneManager::cleanup()
+{
+    renderObjects.clear();
+    sceneGraphRoots.clear();
+    activeCamera = nullptr;
+}
+
+RenderObject *SceneManager::createRenderObject()
+{
+    auto obj = std::make_unique<RenderObject>();
+    RenderObject *ptr = obj.get();
+    renderObjects.push_back(std::move(obj));
+    return ptr;
+}
+
+void SceneManager::removeRenderObject(RenderObject *obj)
+{
+    renderObjects.erase(std::remove_if(renderObjects.begin(), renderObjects.end(),
+                                       [obj](const std::unique_ptr<RenderObject> &o) { return o.get() == obj; }),
+                        renderObjects.end());
+}
+
+void SceneManager::update(float deltaTime)
+{
+    RenderObject::UpdateContext ctx{deltaTime, this};
+    for (auto &o : renderObjects)
+    {
+        o->update(ctx);
+    }
+
+    for (auto &root : sceneGraphRoots)
+    {
+        root->refreshTransform(glm::mat4{1.0f});
+    }
+}
 
 void RenderObject::collectDrawCommands(DrawContext &ctx, ResourceManager *resources)
 {
@@ -41,4 +85,22 @@ void SceneManager::collectDrawCommands(DrawContext &ctx, ResourceManager *resour
     {
         obj->collectDrawCommands(ctx, resources);
     }
+}
+
+void SceneManager::setSunlight(const glm::vec3 &direction, const glm::vec3 &color, float intensity)
+{
+    sceneData.sunlightDirection = glm::vec4(direction, intensity);
+    sceneData.sunlightColor = glm::vec4(color, 1.0f);
+}
+
+void SceneManager::setAmbientLight(const glm::vec3 &color)
+{
+    sceneData.ambientColor = glm::vec4(color, 1.0f);
+}
+
+void SceneManager::updateSceneData(const RenderView &view)
+{
+    sceneData.view = view.viewMatrix;
+    sceneData.proj = view.projectionMatrix;
+    sceneData.viewproj = view.viewProjectionMatrix;
 }

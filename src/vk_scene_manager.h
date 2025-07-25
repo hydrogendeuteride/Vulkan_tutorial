@@ -11,17 +11,17 @@ class SceneManager;
 class RenderObject
 {
 public:
-    uint32_t indexCount;
-    uint32_t firstIndex;
-    VkBuffer indexBuffer;
+    uint32_t indexCount{};
+    uint32_t firstIndex{};
+    VkBuffer indexBuffer{};
 
-    MaterialInstance *material;
-    Bounds bounds;
+    MaterialInstance *material{};
+    Bounds bounds{};
 
     glm::mat4 transform{1.0f};
-    VkDeviceAddress vertexBufferAddress;
+    VkDeviceAddress vertexBufferAddress{};
 
-    Handle<MeshResource> mesh;
+    Handle<MeshResource> mesh{};
     bool visible = true;
 
     //component system
@@ -36,6 +36,12 @@ public:
     }
 
     virtual void collectDrawCommands(DrawContext &ctx, ResourceManager *resources);
+};
+
+struct DrawContext
+{
+    std::vector<RenderObject> OpaqueSurfaces;
+    std::vector<RenderObject> TransparentSurfaces;
 };
 
 class SceneManager

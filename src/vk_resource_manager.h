@@ -6,6 +6,7 @@
 
 #include "vk_loader.h"
 
+class VulkanRenderer;
 template<typename T>
 using Handle = uint32_t;
 
@@ -58,6 +59,10 @@ struct TextureResource
 {
     AllocatedImage image;
     VkSampler sampler;
+};
+
+struct MaterialCreateInfo
+{
 };
 
 class ResourceManager

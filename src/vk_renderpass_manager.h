@@ -2,7 +2,25 @@
 #pragma once
 #include "vk_types.h"
 #include "vk_compute.h"
+#include "vk_scene_manager.h"
 
+class VulkanRenderer;
+class SceneManager;
+class ResourceManager;
+
+struct ComputePushConstants
+{
+    glm::vec4 data1;
+    glm::vec4 data2;
+    glm::vec4 data3;
+    glm::vec4 data4;
+};
+
+struct ComputeEffect
+{
+    const char *name;
+    ComputePushConstants data;
+};
 
 struct RenderContext
 {
@@ -41,11 +59,12 @@ protected:
 class GBufferPass : public RenderPass
 {
 private:
-    VulkanRenderer *renderer;
+    ComputeManager *compute = nullptr;
+    VulkanRenderer *renderer = nullptr;
 
-    VkPipeline pipeline;
-    VkPipelineLayout pipelineLayout;
-    VkDescriptorSetLayout descriptorLayout;
+    VkPipeline pipeline = nullptr;
+    VkPipelineLayout pipelineLayout = nullptr;
+    VkDescriptorSetLayout descriptorLayout = nullptr;
 
 public:
     void initialize(VulkanRenderer *renderer) override;
@@ -56,10 +75,10 @@ public:
 class DeferredLightingPass : public RenderPass
 {
 private:
-    VulkanRenderer *renderer;
-    VkPipeline lightingPipeline;
-    VkPipelineLayout lightingPipelineLayout;
-    VkDescriptorSet gBufferInputDescriptorSet;
+    VulkanRenderer *renderer = nullptr;
+    VkPipeline lightingPipeline = nullptr;
+    VkPipelineLayout lightingPipelineLayout = nullptr;
+    VkDescriptorSet gBufferInputDescriptorSet = nullptr;
 
 public:
     void initialize(VulkanRenderer *renderer) override;
@@ -70,7 +89,8 @@ public:
 class BackgroundPass : public RenderPass
 {
 private:
-    ComputeManager *compute;
+    ComputeManager *compute = nullptr;
+    VulkanRenderer *renderer = nullptr;
     std::vector<ComputeEffect> effects;
     int currentEffect = 0;
 

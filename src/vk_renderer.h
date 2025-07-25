@@ -1,4 +1,5 @@
 #pragma once
+
 #include "vk_compute.h"
 #include "vk_types.h"
 #include "vk_resource_manager.h"
@@ -94,6 +95,14 @@ public:
     AllocatedBuffer create_buffer(size_t allocSize, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage) const;
 
     void destroy_buffer(const AllocatedBuffer &buffer) const;
+
+    AllocatedImage create_image(VkExtent3D size, VkFormat format, VkImageUsageFlags usage, bool mipmapped = false) const;
+
+    AllocatedImage create_image(const void *data, VkExtent3D size, VkFormat format, VkImageUsageFlags usage, bool mipmapped = false) const;
+
+    void destroy_image(const AllocatedImage &img) const;
+
+    GPUMeshBuffers uploadMesh(std::span<uint32_t> indices, std::span<Vertex> vertices) const;
 
     FrameData &get_current_frame() { return _frames[_frameNumber % FRAME_OVERLAP]; }
 
