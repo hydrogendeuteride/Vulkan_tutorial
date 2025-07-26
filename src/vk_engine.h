@@ -5,6 +5,7 @@
 
 #include <vk_types.h>
 #include <vector>
+#include <string>
 #include "vk_mem_alloc.h"
 #include <deque>
 #include <functional>
@@ -115,6 +116,12 @@ struct DrawContext
 {
 	std::vector<RenderObject> OpaqueSurfaces;
 	std::vector<RenderObject> TransparentSurfaces;
+};
+
+struct RenderPass
+{
+	std::string name;
+	std::function<void(VkCommandBuffer)> execute;
 };
 
 struct EngineStats
@@ -233,6 +240,12 @@ public:
 
 	std::vector<ComputeEffect> backgroundEffects;
 	int currentBackgroundEffect{0};
+
+	std::vector<RenderPass> renderPasses;
+
+	void add_render_pass(const std::string &name, std::function<void(VkCommandBuffer)> func);
+
+	void init_render_passes();
 
 	//initializes everything in the engine
 	void init();

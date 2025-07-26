@@ -306,38 +306,10 @@ void VulkanEngine::draw()
     //---------------------------
     VK_CHECK(vkBeginCommandBuffer(cmd, &cmdBeginInfo));
 
-    // transition gbuffer images and depth so we can write into them
-    // we will overwrite them completely so we dont care about previous contents
-    vkutil::transition_image(cmd, _gBufferPosition.image, VK_IMAGE_LAYOUT_UNDEFINED,
-                             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-    vkutil::transition_image(cmd, _gBufferNormal.image, VK_IMAGE_LAYOUT_UNDEFINED,
-                             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-    vkutil::transition_image(cmd, _gBufferAlbedo.image, VK_IMAGE_LAYOUT_UNDEFINED,
-                             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-    vkutil::transition_image(cmd, _depthImage.image, VK_IMAGE_LAYOUT_UNDEFINED,
-                             VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
-
-    vkutil::transition_image(cmd, _drawImage.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                             VK_IMAGE_LAYOUT_GENERAL);
-
-    draw_background(cmd);
-
-    vkutil::transition_image(cmd, _drawImage.image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-    vkutil::transition_image(cmd, _depthImage.image, VK_IMAGE_LAYOUT_UNDEFINED,
-                             VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
-    draw_geometry(cmd);
-
-    vkutil::transition_image(cmd, _gBufferPosition.image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                             VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-    vkutil::transition_image(cmd, _gBufferNormal.image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                             VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-    vkutil::transition_image(cmd, _gBufferAlbedo.image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                             VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-    vkutil::transition_image(cmd, _drawImage.image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-
-    draw_lighting(cmd);
-
+    for (auto &pass : renderPasses)
+    {
+        pass.execute(cmd);
+    }
 
     //transtion the draw image and the swapchain image into their correct transfer layouts
     vkutil::transition_image(cmd, _drawImage.image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
@@ -1270,6 +1242,9 @@ void VulkanEngine::init_pipelines()
     metalRoughMaterial.build_pipelines(this);
 
     init_deferred_pipelines();
+
+
+    init_render_passes();
 }
 
 void VulkanEngine::init_descriptors()
@@ -1647,6 +1622,48 @@ void VulkanEngine::init_deferred_pipelines()
         vkDestroyPipeline(_device, _gBufferPipeline, nullptr);
         vkDestroyPipelineLayout(_device, _lightingPipelineLayout, nullptr);
         vkDestroyPipeline(_device, _lightingPipeline, nullptr);
+    });
+}
+
+void VulkanEngine::add_render_pass(const std::string &name, std::function<void(VkCommandBuffer)> func)
+{
+    renderPasses.push_back(RenderPass{name, std::move(func)});
+}
+
+void VulkanEngine::init_render_passes()
+{
+    renderPasses.clear();
+
+    add_render_pass("background", [this](VkCommandBuffer cmd) {
+        vkutil::transition_image(cmd, _depthImage.image, VK_IMAGE_LAYOUT_UNDEFINED,
+                                 VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+        vkutil::transition_image(cmd, _drawImage.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                                 VK_IMAGE_LAYOUT_GENERAL);
+
+        draw_background(cmd);
+    });
+
+    add_render_pass("geometry", [this](VkCommandBuffer cmd) {
+        vkutil::transition_image(cmd, _gBufferPosition.image, VK_IMAGE_LAYOUT_UNDEFINED,
+                                 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+        vkutil::transition_image(cmd, _gBufferNormal.image, VK_IMAGE_LAYOUT_UNDEFINED,
+                                 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+        vkutil::transition_image(cmd, _gBufferAlbedo.image, VK_IMAGE_LAYOUT_UNDEFINED,
+                                 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+        vkutil::transition_image(cmd, _depthImage.image, VK_IMAGE_LAYOUT_UNDEFINED,
+                                 VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+        draw_geometry(cmd);
+    });
+
+    add_render_pass("lighting", [this](VkCommandBuffer cmd) {
+        vkutil::transition_image(cmd, _gBufferPosition.image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                                 VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        vkutil::transition_image(cmd, _gBufferNormal.image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                                 VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        vkutil::transition_image(cmd, _gBufferAlbedo.image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                                 VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        vkutil::transition_image(cmd, _drawImage.image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+        draw_lighting(cmd);
     });
 }
 
