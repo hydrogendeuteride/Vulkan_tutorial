@@ -14,6 +14,10 @@
 #include "vk_compute.h"
 #include <camera.h>
 
+#include "vk_device.h"
+#include "vk_renderpass.h"
+#include "vk_swapchain.h"
+
 struct FrameData
 {
 	VkSemaphore _swapchainSemaphore, _renderSemaphore;
@@ -125,29 +129,21 @@ public:
 	bool _isInitialized{false};
 	int _frameNumber{0};
 
+	std::unique_ptr<DeviceManager> _deviceManager;
+	std::unique_ptr<SwapchainManager> _swapchainManager;
+	std::unique_ptr<ResourceManager> _resourceManager;
+	std::unique_ptr<RenderPassManager> _renderPassManager;
+
 	Camera mainCamera;
 
 	VkExtent2D _windowExtent{1920, 1080};
 
 	struct SDL_Window *_window{nullptr};
 
-	VkInstance _instance;
-	VkDebugUtilsMessengerEXT _debug_messenger;
-	VkPhysicalDevice _chosenGPU;
-	VkDevice _device;
-
 	FrameData _frames[FRAME_OVERLAP];
 
 	FrameData &get_current_frame() { return _frames[_frameNumber % FRAME_OVERLAP]; };
 
-
-	VkQueue _graphicsQueue;
-	uint32_t _graphicsQueueFamily;
-
-	VkSurfaceKHR _surface;
-	VkSwapchainKHR _swapchain;
-	VkFormat _swapchainImageFormat;
-	VkExtent2D _swapchainExtent;
 	VkExtent2D _drawExtent;
 	float renderScale = 1.f;
 
@@ -155,14 +151,10 @@ public:
 	ComputeManager compute;
 
 	std::vector<VkFramebuffer> _framebuffers;
-	std::vector<VkImage> _swapchainImages;
-	std::vector<VkImageView> _swapchainImageViews;
 
 	VkDescriptorSetLayout _singleImageDescriptorLayout;
 
 	DeletionQueue _mainDeletionQueue;
-
-	VmaAllocator _allocator; //vma lib allocator
 
 	VkPipelineLayout _meshPipelineLayout;
 	VkPipeline _meshPipeline;
@@ -172,12 +164,6 @@ public:
 
 	std::shared_ptr<MeshAsset> cubeMesh;
 	std::shared_ptr<MeshAsset> sphereMesh;
-
-
-	// immediate submit structures
-	VkFence _immFence;
-	VkCommandBuffer _immCommandBuffer;
-	VkCommandPool _immCommandPool;
 
 	AllocatedImage _whiteImage;
 	AllocatedImage _blackImage;
@@ -192,12 +178,6 @@ public:
 	MaterialInstance defaultData;
 
 	GLTFMetallic_Roughness metalRoughMaterial;
-
-	AllocatedImage _drawImage;
-	AllocatedImage _depthImage;
-	AllocatedImage _gBufferPosition;
-	AllocatedImage _gBufferNormal;
-	AllocatedImage _gBufferAlbedo;
 
 	VkDescriptorSetLayout _gBufferInputDescriptorLayout;
 	VkDescriptorSet _gBufferInputDescriptorSet;
@@ -248,35 +228,10 @@ public:
 	//run main loop
 	void run();
 
-	void immediate_submit(std::function<void(VkCommandBuffer cmd)> &&function) const;
-
-	GPUMeshBuffers uploadMesh(std::span<uint32_t> indices, std::span<Vertex> vertices) const;
-
-	AllocatedBuffer create_buffer(size_t allocSize, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage) const;
-
-	AllocatedImage create_image(VkExtent3D size, VkFormat format, VkImageUsageFlags usage, bool mipmapped = false) const;
-
-	AllocatedImage create_image(const void *data, VkExtent3D size, VkFormat format, VkImageUsageFlags usage,
-	                            bool mipmapped = false) const;
-
-	void destroy_image(const AllocatedImage &img) const;
-
-	void destroy_buffer(const AllocatedBuffer &buffer) const;
-
 	bool resize_requested{false};
 	bool freeze_rendering{false};
 
 private:
-	void init_vulkan();
-
-	void init_swapchain();
-
-	void create_swapchain(uint32_t width, uint32_t height);
-
-	void destroy_swapchain() const;
-
-	void resize_swapchain();
-
 	void init_commands();
 
 	void init_background_pipelines();

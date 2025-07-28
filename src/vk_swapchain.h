@@ -26,6 +26,9 @@ public:
 
     AllocatedImage drawImage() const { return _drawImage; }
     AllocatedImage depthImage() const { return _depthImage; }
+    AllocatedImage gBufferPosition() const { return _gBufferPosition; }
+    AllocatedImage gBufferNormal() const { return _gBufferNormal; }
+    AllocatedImage gBufferAlbedo() const { return _gBufferAlbedo; }
     VkExtent2D windowExtent() const { return _windowExtent; }
 
     bool resize_requested{false};

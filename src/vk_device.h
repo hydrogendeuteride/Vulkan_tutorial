@@ -17,6 +17,7 @@ public:
     VkQueue graphicsQueue() const { return _graphicsQueue; }
     uint32_t graphicsQueueFamily() const { return _graphicsQueueFamily; }
     VmaAllocator allocator() const { return _allocator; }
+    VkDebugUtilsMessengerEXT debugMessenger() { return _debug_messenger; }
 
 private:
     VkInstance _instance = nullptr;
