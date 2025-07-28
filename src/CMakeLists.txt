@@ -29,6 +29,11 @@ add_executable (engine
         vk_renderpass_background.cpp
         vk_renderpass_geometry.h
         vk_renderpass_geometry.cpp
+        vk_renderpass_lighting.h
+        vk_renderpass_lighting.cpp
+        vk_renderpass.cpp
+        vk_renderpass_imgui.h
+        vk_renderpass_imgui.cpp
 )
 
 set_property(TARGET engine PROPERTY CXX_STANDARD 20)

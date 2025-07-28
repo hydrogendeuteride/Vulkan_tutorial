@@ -2,6 +2,50 @@
 #include "vk_engine.h"
 #include "vk_images.h"
 #include "vk_initializers.h"
+#include "vk_resource.h"
+
+#define VMA_IMPLEMENTATION
+#include "vk_mem_alloc.h"
+
+bool is_visible(const RenderObject &obj, const glm::mat4 &viewproj)
+{
+    std::array<glm::vec3, 8> corners{
+        glm::vec3{1, 1, 1},
+        glm::vec3{1, 1, -1},
+        glm::vec3{1, -1, 1},
+        glm::vec3{1, -1, -1},
+        glm::vec3{-1, 1, 1},
+        glm::vec3{-1, 1, -1},
+        glm::vec3{-1, -1, 1},
+        glm::vec3{-1, -1, -1},
+    };
+
+    glm::mat4 matrix = viewproj * obj.transform;
+
+    glm::vec3 min = {1.5, 1.5, 1.5};
+    glm::vec3 max = {-1.5, -1.5, -1.5};
+
+    for (int c = 0; c < 8; c++)
+    {
+        // project each corner into clip space
+        glm::vec4 v = matrix * glm::vec4(obj.bounds.origin + (corners[c] * obj.bounds.extents), 1.f);
+
+        // perspective correction
+        v.x = v.x / v.w;
+        v.y = v.y / v.w;
+        v.z = v.z / v.w;
+
+        min = glm::min(glm::vec3{v.x, v.y, v.z}, min);
+        max = glm::max(glm::vec3{v.x, v.y, v.z}, max);
+    }
+
+    // check the clip space box is within the view
+    if (min.z > 1.f || max.z < 0.f || min.x > 1.f || max.x < -1.f || min.y > 1.f || max.y < -1.f)
+    {
+        return false;
+    }
+    return true;
+}
 
 void GeometryPass::init(VulkanEngine *engine)
 {
@@ -10,13 +54,13 @@ void GeometryPass::init(VulkanEngine *engine)
 
 void GeometryPass::execute(VkCommandBuffer cmd)
 {
-    vkutil::transition_image(cmd, _engine->_gBufferPosition.image, VK_IMAGE_LAYOUT_UNDEFINED,
+    vkutil::transition_image(cmd, _engine->_swapchainManager->gBufferPosition().image, VK_IMAGE_LAYOUT_UNDEFINED,
                              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-    vkutil::transition_image(cmd, _engine->_gBufferNormal.image, VK_IMAGE_LAYOUT_UNDEFINED,
+    vkutil::transition_image(cmd, _engine->_swapchainManager->gBufferNormal().image, VK_IMAGE_LAYOUT_UNDEFINED,
                              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-    vkutil::transition_image(cmd, _engine->_gBufferAlbedo.image, VK_IMAGE_LAYOUT_UNDEFINED,
+    vkutil::transition_image(cmd, _engine->_swapchainManager->gBufferAlbedo().image, VK_IMAGE_LAYOUT_UNDEFINED,
                              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-    vkutil::transition_image(cmd, _engine->_depthImage.image, VK_IMAGE_LAYOUT_UNDEFINED,
+    vkutil::transition_image(cmd, _engine->_swapchainManager->depthImage().image, VK_IMAGE_LAYOUT_UNDEFINED,
                              VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 
     draw_geometry(cmd);
@@ -55,39 +99,39 @@ auto start = std::chrono::system_clock::now();
     VkRenderingAttachmentInfo gbufferAttachments[3];
     VkClearValue gbufferClear{};
     gbufferClear.color = {{0.f, 0.f, 0.f, 0.f}};
-    gbufferAttachments[0] = vkinit::attachment_info( _engine->swapchainManager._gBufferPosition.imageView, &gbufferClear,
+    gbufferAttachments[0] = vkinit::attachment_info( _engine->_swapchainManager->gBufferPosition().imageView, &gbufferClear,
                                                     VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-    gbufferAttachments[1] = vkinit::attachment_info( _engine->swapchainManager._gBufferNormal.imageView, &gbufferClear,
+    gbufferAttachments[1] = vkinit::attachment_info( _engine->_swapchainManager->gBufferNormal().imageView, &gbufferClear,
                                                     VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-    gbufferAttachments[2] = vkinit::attachment_info(_gBufferAlbedo.imageView, &gbufferClear,
+    gbufferAttachments[2] = vkinit::attachment_info(_engine->_swapchainManager->gBufferAlbedo().imageView, &gbufferClear,
                                                     VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
     VkRenderingAttachmentInfo depthAttachment = vkinit::depth_attachment_info(
-         _engine->swapchainManager._depthImage.imageView, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+         _engine->_swapchainManager->depthImage().imageView, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 
-    VkRenderingInfo renderInfo = vkinit::rendering_info_multi(_drawExtent, 3, gbufferAttachments, &depthAttachment);
+    VkRenderingInfo renderInfo = vkinit::rendering_info_multi(_engine->_drawExtent, 3, gbufferAttachments, &depthAttachment);
     vkCmdBeginRendering(cmd, &renderInfo);
 
     //allocate a new uniform buffer for the scene data
-    AllocatedBuffer gpuSceneDataBuffer = create_buffer(sizeof(GPUSceneData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+    AllocatedBuffer gpuSceneDataBuffer = _engine->_resourceManager->create_buffer(sizeof(GPUSceneData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                                                        VMA_MEMORY_USAGE_CPU_TO_GPU);
 
     //add it to the deletion queue of this frame so it gets deleted once its been used
-    get_current_frame()._deletionQueue.push_function([=, this]() {
-        destroy_buffer(gpuSceneDataBuffer);
+    _engine->get_current_frame()._deletionQueue.push_function([=, this]() {
+        _engine->_resourceManager->destroy_buffer(gpuSceneDataBuffer);
     });
 
     //write the buffer
     auto *sceneUniformData = static_cast<GPUSceneData *>(gpuSceneDataBuffer.allocation->GetMappedData());
-    *sceneUniformData = sceneData;
+    *sceneUniformData = _engine->sceneData;
 
     //create a descriptor set that binds that buffer and update it
-    VkDescriptorSet globalDescriptor = get_current_frame()._frameDescriptors.allocate(
-        _device, _gpuSceneDataDescriptorLayout);
+    VkDescriptorSet globalDescriptor = _engine->get_current_frame()._frameDescriptors.allocate(
+        _engine->_deviceManager->device(), _engine->_gpuSceneDataDescriptorLayout);
 
     DescriptorWriter writer;
     writer.write_buffer(0, gpuSceneDataBuffer.buffer, sizeof(GPUSceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-    writer.update_set(_device, globalDescriptor);
+    writer.update_set(_engine->_deviceManager->device(), globalDescriptor);
 
     MaterialPipeline *lastPipeline = nullptr;
     MaterialInstance *lastMaterial = nullptr;
@@ -107,8 +151,8 @@ auto start = std::chrono::system_clock::now();
                 VkViewport viewport = {};
                 viewport.x = 0;
                 viewport.y = 0;
-                viewport.width = static_cast<float>(_windowExtent.width);
-                viewport.height = static_cast<float>(_windowExtent.height);
+                viewport.width = static_cast<float>(_engine->_swapchainManager->windowExtent().width);
+                viewport.height = static_cast<float>(_engine->_swapchainManager->windowExtent().height);
                 viewport.minDepth = 0.f;
                 viewport.maxDepth = 1.f;
 
@@ -117,8 +161,8 @@ auto start = std::chrono::system_clock::now();
                 VkRect2D scissor = {};
                 scissor.offset.x = 0;
                 scissor.offset.y = 0;
-                scissor.extent.width = _windowExtent.width;
-                scissor.extent.height = _windowExtent.height;
+                scissor.extent.width = _engine->_swapchainManager->windowExtent().width;
+                scissor.extent.height = _engine->_swapchainManager->windowExtent().height;
 
                 vkCmdSetScissor(cmd, 0, 1, &scissor);
             }
@@ -140,19 +184,19 @@ auto start = std::chrono::system_clock::now();
 
         vkCmdDrawIndexed(cmd, r.indexCount, 1, r.firstIndex, 0, 0);
 
-        stats.drawcall_count++;
-        stats.triangle_count += r.indexCount / 3;
+        _engine->stats.drawcall_count++;
+        _engine->stats.triangle_count += r.indexCount / 3;
     };
 
-    stats.drawcall_count = 0;
-    stats.triangle_count = 0;
+    _engine->stats.drawcall_count = 0;
+    _engine->stats.triangle_count = 0;
 
     for (auto &r: opaque_draws)
     {
-        draw(mainDrawContext.OpaqueSurfaces[r]);
+        draw(_engine->mainDrawContext.OpaqueSurfaces[r]);
     }
 
-    for (auto &r: mainDrawContext.TransparentSurfaces)
+    for (auto &r: _engine->mainDrawContext.TransparentSurfaces)
     {
         draw(r);
     }
@@ -162,5 +206,10 @@ auto start = std::chrono::system_clock::now();
     auto end = std::chrono::system_clock::now();
 
     auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-    stats.mesh_draw_time = elapsed.count() / 1000.f;
+    _engine->stats.mesh_draw_time = elapsed.count() / 1000.f;
+}
+
+void GeometryPass::cleanup()
+{
+
 }

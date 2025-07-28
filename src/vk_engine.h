@@ -16,6 +16,7 @@
 
 #include "vk_device.h"
 #include "vk_renderpass.h"
+#include "vk_renderpass_background.h"
 #include "vk_swapchain.h"
 
 struct FrameData
@@ -197,14 +198,17 @@ public:
 
 	EngineStats stats;
 
-	std::vector<ComputeEffect> backgroundEffects;
-	int currentBackgroundEffect{0};
-
 	std::vector<RenderPass> renderPasses;
 
-	void add_render_pass(const std::string &name, std::function<void(VkCommandBuffer)> func);
+	uint32_t swapchainImageIndex;
 
-	void init_render_passes();
+	void updateBackgroundEffect(int index) const
+	{
+		if (auto *bgPass = _renderPassManager->getPass<BackgroundPass>())
+		{
+			bgPass->setCurrentEffect(index);
+		}
+	}
 
 	//initializes everything in the engine
 	void init();
@@ -214,12 +218,6 @@ public:
 
 	//draw loop
 	void draw();
-
-	void draw_background(VkCommandBuffer cmd);
-
-	void draw_geometry(VkCommandBuffer cmd);
-
-	void draw_lighting(VkCommandBuffer cmd);
 
 	void draw_imgui(VkCommandBuffer cmd, VkImageView targetImageView) const;
 
@@ -233,8 +231,6 @@ public:
 
 private:
 	void init_commands();
-
-	void init_background_pipelines();
 
 	void init_pipelines();
 

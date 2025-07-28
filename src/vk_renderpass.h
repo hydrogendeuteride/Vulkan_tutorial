@@ -29,7 +29,7 @@ public:
 
     void addPass(std::unique_ptr<IRenderPass> pass);
 
-    void executeAll(VkCommandBuffer cmd);
+    void executeAll(VkCommandBuffer cmd) const;
 
     template<typename T>
     T *getPass()

@@ -196,7 +196,7 @@ void ComputeManager::dispatch(VkCommandBuffer cmd, const std::string &pipelineNa
 
 void ComputeManager::dispatchImmediate(const std::string &pipelineName, const ComputeDispatchInfo &dispatchInfo)
 {
-    engine->immediate_submit([this, pipelineName, dispatchInfo](VkCommandBuffer cmd) {
+    engine->_resourceManager->immediate_submit([this, pipelineName, dispatchInfo](VkCommandBuffer cmd) {
         dispatch(cmd, pipelineName, dispatchInfo);
     });
 }
