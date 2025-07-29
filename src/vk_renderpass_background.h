@@ -15,10 +15,11 @@ public:
     void setCurrentEffect(int index) { _currentEffect = index; }
     std::vector<ComputeEffect> &getEffects() { return _backgroundEffects; }
 
-private:
-    VulkanEngine *_engine = nullptr;
     std::vector<ComputeEffect> _backgroundEffects;
     int _currentEffect = 0;
+
+private:
+    VulkanEngine *_engine = nullptr;
 
     void init_background_pipelines();
 };

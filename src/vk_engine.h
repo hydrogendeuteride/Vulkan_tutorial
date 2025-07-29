@@ -17,6 +17,7 @@
 #include "vk_device.h"
 #include "vk_renderpass.h"
 #include "vk_renderpass_background.h"
+#include "vk_resource.h"
 #include "vk_swapchain.h"
 
 struct FrameData
@@ -137,8 +138,6 @@ public:
 
 	Camera mainCamera;
 
-	VkExtent2D _windowExtent{1920, 1080};
-
 	struct SDL_Window *_window{nullptr};
 
 	FrameData _frames[FRAME_OVERLAP];
@@ -200,16 +199,6 @@ public:
 
 	std::vector<RenderPass> renderPasses;
 
-	uint32_t swapchainImageIndex;
-
-	void updateBackgroundEffect(int index) const
-	{
-		if (auto *bgPass = _renderPassManager->getPass<BackgroundPass>())
-		{
-			bgPass->setCurrentEffect(index);
-		}
-	}
-
 	//initializes everything in the engine
 	void init();
 
@@ -219,7 +208,7 @@ public:
 	//draw loop
 	void draw();
 
-	void draw_imgui(VkCommandBuffer cmd, VkImageView targetImageView) const;
+	// void draw_imgui(VkCommandBuffer cmd, VkImageView targetImageView) const;
 
 	void update_scene();
 
@@ -242,7 +231,7 @@ private:
 
 	void init_sync_structures();
 
-	void init_imgui();
+	// void init_imgui();
 
 	void init_default_samplers();
 

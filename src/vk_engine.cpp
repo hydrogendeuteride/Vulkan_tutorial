@@ -18,13 +18,12 @@
 #include <glm/gtx/transform.hpp>
 #include "primitives.h"
 
-#define VMA_IMPLEMENTATION
-
 #include "vk_mem_alloc.h"
 #include "imgui.h"
 #include "imgui_impl_sdl2.h"
 #include "imgui_impl_vulkan.h"
 #include "vk_renderpass_geometry.h"
+#include "vk_renderpass_imgui.h"
 #include "vk_renderpass_lighting.h"
 #include "vk_resource.h"
 
@@ -39,6 +38,8 @@ void VulkanEngine::init()
 
     constexpr auto window_flags = static_cast<SDL_WindowFlags>(SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE);
 
+    _swapchainManager = std::make_unique<SwapchainManager>();
+    
     _window = SDL_CreateWindow(
         "Vulkan Engine",
         SDL_WINDOWPOS_UNDEFINED,
@@ -54,12 +55,14 @@ void VulkanEngine::init()
     _resourceManager = std::make_unique<ResourceManager>();
     _resourceManager->init(_deviceManager.get());
 
-    _swapchainManager = std::make_unique<SwapchainManager>();
     _swapchainManager->init(_deviceManager.get(), _resourceManager.get());
     _swapchainManager->init_swapchain();
 
     _renderPassManager = std::make_unique<RenderPassManager>();
     _renderPassManager->init(this);
+
+    // Initialize compute manager early to ensure it's ready for render passes
+    compute.init(this);
 
     init_commands();
 
@@ -69,21 +72,22 @@ void VulkanEngine::init()
 
     init_descriptors();
 
+    init_default_data();
+
     auto backgroundPass = std::make_unique<BackgroundPass>();
     auto geometryPass = std::make_unique<GeometryPass>();
     auto lightingPass = std::make_unique<LightingPass>();
+    auto imguiPass = std::make_unique<ImGuiPass>();
 
     backgroundPass->init(this);
     geometryPass->init(this);
     lightingPass->init(this);
+    imguiPass->init(this);
 
     _renderPassManager->addPass(std::move(backgroundPass));
     _renderPassManager->addPass(std::move(geometryPass));
     _renderPassManager->addPass(std::move(lightingPass));
-
-    init_imgui();
-
-    init_default_data();
+    _renderPassManager->setImGuiPass(std::move(imguiPass));
 
     mainCamera.velocity = glm::vec3(0.f);
     mainCamera.position = glm::vec3(30.f, -00.f, -085.f);
@@ -146,7 +150,10 @@ void VulkanEngine::init_default_data()
     AllocatedBuffer matBuffer = _resourceManager->create_buffer(sizeof(GLTFMetallic_Roughness::MaterialConstants),
                                                                 VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                                                                 VMA_MEMORY_USAGE_CPU_TO_GPU);
-    auto *matConstants = (GLTFMetallic_Roughness::MaterialConstants *) matBuffer.allocation->GetMappedData();
+
+    VmaAllocationInfo allocInfo{};
+    vmaGetAllocationInfo(_deviceManager->allocator(), matBuffer.allocation, &allocInfo);
+    auto *matConstants = (GLTFMetallic_Roughness::MaterialConstants *)allocInfo.pMappedData;
     *matConstants = {};
     matConstants->colorFactors = glm::vec4(1.0f);
     matResources.dataBuffer = matBuffer.buffer;
@@ -243,20 +250,6 @@ void VulkanEngine::cleanup()
     }
 }
 
-void VulkanEngine::draw_imgui(VkCommandBuffer cmd, VkImageView targetImageView) const
-{
-    VkRenderingAttachmentInfo colorAttachment = vkinit::attachment_info(targetImageView, nullptr,
-                                                                        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-    VkRenderingInfo renderInfo =
-            vkinit::rendering_info(_swapchainManager->swapchainExtent(), &colorAttachment, nullptr);
-
-    vkCmdBeginRendering(cmd, &renderInfo);
-
-    ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmd);
-
-    vkCmdEndRendering(cmd);
-}
-
 void VulkanEngine::draw()
 {
     update_scene();
@@ -269,6 +262,8 @@ void VulkanEngine::draw()
     //< frame_clear
 
     get_current_frame()._deletionQueue.flush();
+
+    uint32_t swapchainImageIndex;
 
     VkResult e = vkAcquireNextImageKHR(_deviceManager->device(), _swapchainManager->swapchain(), 1000000000,
                                        get_current_frame()._swapchainSemaphore,
@@ -318,7 +313,7 @@ void VulkanEngine::draw()
                              VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
-    draw_imgui(cmd, _swapchainManager->swapchainImageViews()[swapchainImageIndex]);
+    _renderPassManager->executeImGui(cmd, _swapchainManager->swapchainImageViews()[swapchainImageIndex]);
 
     vkutil::transition_image(cmd, _swapchainManager->swapchainImages()[swapchainImageIndex],
                              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
@@ -355,46 +350,6 @@ void VulkanEngine::draw()
     }
 
     _frameNumber++;
-}
-
-bool is_visible(const RenderObject &obj, const glm::mat4 &viewproj)
-{
-    std::array<glm::vec3, 8> corners{
-        glm::vec3{1, 1, 1},
-        glm::vec3{1, 1, -1},
-        glm::vec3{1, -1, 1},
-        glm::vec3{1, -1, -1},
-        glm::vec3{-1, 1, 1},
-        glm::vec3{-1, 1, -1},
-        glm::vec3{-1, -1, 1},
-        glm::vec3{-1, -1, -1},
-    };
-
-    glm::mat4 matrix = viewproj * obj.transform;
-
-    glm::vec3 min = {1.5, 1.5, 1.5};
-    glm::vec3 max = {-1.5, -1.5, -1.5};
-
-    for (int c = 0; c < 8; c++)
-    {
-        // project each corner into clip space
-        glm::vec4 v = matrix * glm::vec4(obj.bounds.origin + (corners[c] * obj.bounds.extents), 1.f);
-
-        // perspective correction
-        v.x = v.x / v.w;
-        v.y = v.y / v.w;
-        v.z = v.z / v.w;
-
-        min = glm::min(glm::vec3{v.x, v.y, v.z}, min);
-        max = glm::max(glm::vec3{v.x, v.y, v.z}, max);
-    }
-
-    // check the clip space box is within the view
-    if (min.z > 1.f || max.z < 0.f || min.x > 1.f || max.x < -1.f || min.y > 1.f || max.y < -1.f)
-    {
-        return false;
-    }
-    return true;
 }
 
 void VulkanEngine::run()
@@ -446,11 +401,12 @@ void VulkanEngine::run()
 
         if (ImGui::Begin("background"))
         {
-            ComputeEffect &selected = backgroundEffects[currentBackgroundEffect];
+            auto background_pass = _renderPassManager->getPass<BackgroundPass>();
+            ComputeEffect &selected = background_pass->_backgroundEffects[background_pass->_currentEffect];
 
             ImGui::Text("Selected effect: ", selected.name);
 
-            ImGui::SliderInt("Effect Index", &currentBackgroundEffect, 0, backgroundEffects.size() - 1);
+            ImGui::SliderInt("Effect Index", &background_pass->_currentEffect, 0, background_pass->_backgroundEffects.size() - 1);
 
             ImGui::InputFloat4("data1", reinterpret_cast<float *>(&selected.data.data1));
             ImGui::InputFloat4("data2", reinterpret_cast<float *>(&selected.data.data2));
@@ -588,68 +544,8 @@ void VulkanEngine::init_default_samplers()
     });
 }
 
-void VulkanEngine::init_imgui()
-{
-    VkDescriptorPoolSize pool_sizes[] = {
-        {VK_DESCRIPTOR_TYPE_SAMPLER, 1000},
-        {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000},
-        {VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000},
-        {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000},
-        {VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000},
-        {VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000},
-        {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000},
-        {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000},
-        {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000},
-        {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000},
-        {VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000}
-    };
-
-    VkDescriptorPoolCreateInfo pool_info = {};
-    pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-    pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-    pool_info.maxSets = 1000;
-    pool_info.poolSizeCount = (uint32_t) std::size(pool_sizes);
-    pool_info.pPoolSizes = pool_sizes;
-
-    VkDescriptorPool imguiPool;
-    VK_CHECK(vkCreateDescriptorPool(_deviceManager->device(), &pool_info, nullptr, &imguiPool));
-
-    ImGui::CreateContext();
-
-    ImGui_ImplSDL2_InitForVulkan(_window);
-
-    ImGui_ImplVulkan_InitInfo init_info = {};
-    init_info.Instance = _deviceManager->instance();
-    init_info.PhysicalDevice = _deviceManager->physicalDevice();
-    init_info.Device = _deviceManager->device();
-    init_info.Queue = _deviceManager->graphicsQueue();
-    init_info.DescriptorPool = imguiPool;
-    init_info.MinImageCount = 3;
-    init_info.ImageCount = 3;
-    init_info.UseDynamicRendering = true;
-
-    init_info.PipelineRenderingCreateInfo = {.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO};
-    init_info.PipelineRenderingCreateInfo.colorAttachmentCount = 1;
-    auto _swapchainImageFormat = _swapchainManager->swapchainImageFormat();
-    init_info.PipelineRenderingCreateInfo.pColorAttachmentFormats = &_swapchainImageFormat;
-
-    init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
-
-    ImGui_ImplVulkan_Init(&init_info);
-
-    ImGui_ImplVulkan_CreateFontsTexture();
-
-    // add the destroy the imgui created structures
-    _mainDeletionQueue.push_function([=]() {
-        ImGui_ImplVulkan_Shutdown();
-        vkDestroyDescriptorPool(_deviceManager->device(), imguiPool, nullptr);
-    });
-}
-
 void VulkanEngine::init_pipelines()
 {
-    init_background_pipelines();
-
     init_mesh_pipeline();
 
     metalRoughMaterial.build_pipelines(this);
@@ -667,8 +563,6 @@ void VulkanEngine::init_descriptors()
     };
 
     globalDescriptorAllocator.init(_deviceManager->device(), 10, sizes);
-
-    compute.init(this);
 
     //make the descriptor set layout for our compute draw
     {

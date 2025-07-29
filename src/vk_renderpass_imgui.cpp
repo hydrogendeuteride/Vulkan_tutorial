@@ -66,28 +66,25 @@ void ImGuiPass::init(VulkanEngine *engine)
 
 void ImGuiPass::cleanup()
 {
-
 }
 
 void ImGuiPass::execute(VkCommandBuffer cmd)
 {
-    vkutil::transition_image(cmd, _engine->_swapchainManager->swapchainImages()[_engine->swapchainImageIndex],
-                                 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                                 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+}
 
-    draw_imgui(cmd, _engine->_swapchainManager->swapchainImageViews()[_engine->swapchainImageIndex]);
+void ImGuiPass::executeWithTarget(VkCommandBuffer cmd, VkImageView targetImageView) const
+{
+    draw_imgui(cmd, targetImageView);
 }
 
 void ImGuiPass::draw_imgui(VkCommandBuffer cmd, VkImageView targetImageView) const
 {
-    VkRenderingAttachmentInfo colorAttachment = vkinit::attachment_info(targetImageView, nullptr,
-                                                                        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-    VkRenderingInfo renderInfo =
-            vkinit::rendering_info(_engine->_swapchainManager->swapchainExtent(), &colorAttachment, nullptr);
+    VkRenderingAttachmentInfo colorAttachment = vkinit::attachment_info(
+        targetImageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    VkRenderingInfo renderInfo = vkinit::rendering_info(
+        _engine->_swapchainManager->swapchainExtent(), &colorAttachment, nullptr);
 
     vkCmdBeginRendering(cmd, &renderInfo);
-
     ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmd);
-
     vkCmdEndRendering(cmd);
 }

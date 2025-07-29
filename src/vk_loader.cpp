@@ -37,7 +37,7 @@ std::optional<AllocatedImage> load_image(VulkanEngine *engine, fastgltf::Asset &
                     imagesize.height = height;
                     imagesize.depth = 1;
 
-                    newImage = engine->create_image(data, imagesize, VK_FORMAT_R8G8B8A8_UNORM,
+                    newImage = engine->_resourceManager->create_image(data, imagesize, VK_FORMAT_R8G8B8A8_UNORM,
                                                     VK_IMAGE_USAGE_SAMPLED_BIT, false);
 
                     stbi_image_free(data);
@@ -53,7 +53,7 @@ std::optional<AllocatedImage> load_image(VulkanEngine *engine, fastgltf::Asset &
                     imagesize.height = height;
                     imagesize.depth = 1;
 
-                    newImage = engine->create_image(data, imagesize, VK_FORMAT_R8G8B8A8_UNORM,
+                    newImage = engine->_resourceManager->create_image(data, imagesize, VK_FORMAT_R8G8B8A8_UNORM,
                                                     VK_IMAGE_USAGE_SAMPLED_BIT, false);
 
                     stbi_image_free(data);
@@ -81,7 +81,7 @@ std::optional<AllocatedImage> load_image(VulkanEngine *engine, fastgltf::Asset &
                                        imagesize.height = height;
                                        imagesize.depth = 1;
 
-                                       newImage = engine->create_image(data, imagesize, VK_FORMAT_R8G8B8A8_UNORM,
+                                       newImage = engine->_resourceManager->create_image(data, imagesize, VK_FORMAT_R8G8B8A8_UNORM,
                                                                        VK_IMAGE_USAGE_SAMPLED_BIT, false);
 
                                        stbi_image_free(data);
@@ -206,7 +206,7 @@ std::optional<std::shared_ptr<LoadedGLTF> > loadGltf(VulkanEngine *engine, std::
         {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1}
     };
 
-    file.descriptorPool.init(engine->_device, gltf.materials.size(), sizes);
+    file.descriptorPool.init(engine->_deviceManager->device(), gltf.materials.size(), sizes);
     //< load_2
     //> load_samplers
 
@@ -223,7 +223,7 @@ std::optional<std::shared_ptr<LoadedGLTF> > loadGltf(VulkanEngine *engine, std::
         sampl.mipmapMode = extract_mipmap_mode(sampler.minFilter.value_or(fastgltf::Filter::Nearest));
 
         VkSampler newSampler;
-        vkCreateSampler(engine->_device, &sampl, nullptr, &newSampler);
+        vkCreateSampler(engine->_deviceManager->device(), &sampl, nullptr, &newSampler);
 
         file.samplers.push_back(newSampler);
     }
@@ -257,7 +257,7 @@ std::optional<std::shared_ptr<LoadedGLTF> > loadGltf(VulkanEngine *engine, std::
 
     //> load_buffer
     // create buffer to hold the material data
-    file.materialDataBuffer = engine->create_buffer(
+    file.materialDataBuffer = engine->_resourceManager->create_buffer(
         sizeof(GLTFMetallic_Roughness::MaterialConstants) * gltf.materials.size(),
         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
     int data_index = 0;
@@ -309,7 +309,7 @@ std::optional<std::shared_ptr<LoadedGLTF> > loadGltf(VulkanEngine *engine, std::
             materialResources.colorSampler = file.samplers[sampler];
         }
         // build material
-        newMat->data = engine->metalRoughMaterial.write_material(engine->_device, passType, materialResources,
+        newMat->data = engine->metalRoughMaterial.write_material(engine->_deviceManager->device(), passType, materialResources,
                                                                  file.descriptorPool);
 
         data_index++;
@@ -422,7 +422,7 @@ std::optional<std::shared_ptr<LoadedGLTF> > loadGltf(VulkanEngine *engine, std::
             newmesh->surfaces.push_back(newSurface);
         }
 
-        newmesh->meshBuffers = engine->uploadMesh(indices, vertices);
+        newmesh->meshBuffers = engine->_resourceManager->uploadMesh(indices, vertices);
     }
     //> load_nodes
     // load all nodes and their meshes
@@ -503,12 +503,12 @@ void LoadedGLTF::Draw(const glm::mat4 &topMatrix, DrawContext &ctx)
 
 void LoadedGLTF::clearAll()
 {
-    VkDevice dv = creator->_device;
+    VkDevice dv = creator->_deviceManager->device();
 
     for (auto &[k, v]: meshes)
     {
-        creator->destroy_buffer(v->meshBuffers.indexBuffer);
-        creator->destroy_buffer(v->meshBuffers.vertexBuffer);
+        creator->_resourceManager->destroy_buffer(v->meshBuffers.indexBuffer);
+        creator->_resourceManager->destroy_buffer(v->meshBuffers.vertexBuffer);
     }
 
     for (auto &[k, v]: images)
@@ -518,7 +518,7 @@ void LoadedGLTF::clearAll()
             // dont destroy the default images
             continue;
         }
-        creator->destroy_image(v);
+        creator->_resourceManager->destroy_image(v);
     }
 
     for (auto &sampler: samplers)
@@ -531,5 +531,5 @@ void LoadedGLTF::clearAll()
 
     descriptorPool.destroy_pools(dv);
 
-    creator->destroy_buffer(materialBuffer);
+    creator->_resourceManager->destroy_buffer(materialBuffer);
 }

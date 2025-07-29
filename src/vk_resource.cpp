@@ -3,7 +3,6 @@
 #include "vk_images.h"
 #include "vk_initializers.h"
 
-#define VMA_IMPLEMENTATION
 #include "vk_mem_alloc.h"
 
 void ResourceManager::init(DeviceManager *deviceManager)
@@ -192,7 +191,9 @@ GPUMeshBuffers ResourceManager::uploadMesh(std::span<uint32_t> indices, std::spa
     AllocatedBuffer staging = create_buffer(vertexBufferSize + indexBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                                             VMA_MEMORY_USAGE_CPU_ONLY);
 
-    void *data = staging.allocation->GetMappedData();
+    VmaAllocationInfo allocInfo{};
+    vmaGetAllocationInfo(_deviceManager->allocator(), staging.allocation, &allocInfo);
+    void *data = allocInfo.pMappedData;
 
     // copy vertex buffer
     memcpy(data, vertices.data(), vertexBufferSize);

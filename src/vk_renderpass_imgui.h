@@ -4,13 +4,15 @@
 class ImGuiPass : public IRenderPass
 {
 public:
-    void init(VulkanEngine *engine);
+    void init(VulkanEngine *engine) override;
 
-    void cleanup();
+    void cleanup() override;
 
-    void execute(VkCommandBuffer cmd);
+    void execute(VkCommandBuffer cmd) override;
 
-    const char *getName() const { return "ImGui"; }
+    void executeWithTarget(VkCommandBuffer cmd, VkImageView targetImageView) const;
+
+    const char *getName() const override { return "ImGui"; }
 
 private:
     VulkanEngine *_engine = nullptr;

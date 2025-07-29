@@ -15,5 +15,5 @@ public:
 private:
     VulkanEngine *_engine = nullptr;
 
-    void draw_geometry(VkCommandBuffer cmd);
+    void draw_geometry(VkCommandBuffer cmd) const;
 };

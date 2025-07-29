@@ -42,6 +42,11 @@ target_include_directories(engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 
 target_link_libraries(engine PUBLIC vma glm Vulkan::Vulkan fmt::fmt stb_image SDL2::SDL2 vkbootstrap imgui fastgltf::fastgltf)
 
+add_library(vma_impl OBJECT vma_impl.cpp)
+target_include_directories(vma_impl PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../third_party/vma")
+target_link_libraries(vma_impl PRIVATE Vulkan::Vulkan)
+target_link_libraries(engine PUBLIC $<TARGET_OBJECTS:vma_impl>)
+
 target_precompile_headers(engine PUBLIC <optional> <vector> <memory> <string> <vector> <unordered_map> <glm/mat4x4.hpp>  <glm/vec4.hpp> <vulkan/vulkan.h>)
 
 add_custom_command(TARGET engine POST_BUILD

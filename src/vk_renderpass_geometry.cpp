@@ -4,7 +4,6 @@
 #include "vk_initializers.h"
 #include "vk_resource.h"
 
-#define VMA_IMPLEMENTATION
 #include "vk_mem_alloc.h"
 
 bool is_visible(const RenderObject &obj, const glm::mat4 &viewproj)
@@ -66,7 +65,7 @@ void GeometryPass::execute(VkCommandBuffer cmd)
     draw_geometry(cmd);
 }
 
-void GeometryPass::draw_geometry(VkCommandBuffer cmd)
+void GeometryPass::draw_geometry(VkCommandBuffer cmd) const
 {
 auto start = std::chrono::system_clock::now();
 
@@ -122,7 +121,9 @@ auto start = std::chrono::system_clock::now();
     });
 
     //write the buffer
-    auto *sceneUniformData = static_cast<GPUSceneData *>(gpuSceneDataBuffer.allocation->GetMappedData());
+    VmaAllocationInfo allocInfo{};
+    vmaGetAllocationInfo(_engine->_deviceManager->allocator(), gpuSceneDataBuffer.allocation, &allocInfo);
+    auto *sceneUniformData = static_cast<GPUSceneData *>(allocInfo.pMappedData);
     *sceneUniformData = _engine->sceneData;
 
     //create a descriptor set that binds that buffer and update it

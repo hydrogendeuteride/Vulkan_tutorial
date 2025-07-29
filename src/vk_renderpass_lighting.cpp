@@ -4,7 +4,6 @@
 #include "vk_initializers.h"
 #include "vk_resource.h"
 
-#define VMA_IMPLEMENTATION
 #include "vk_mem_alloc.h"
 
 void LightingPass::init(VulkanEngine *engine)
@@ -45,7 +44,9 @@ void LightingPass::draw_lighting(VkCommandBuffer cmd)
         _engine->_resourceManager->destroy_buffer(gpuSceneDataBuffer);
     });
 
-    auto *sceneUniformData = static_cast<GPUSceneData *>(gpuSceneDataBuffer.allocation->GetMappedData());
+    VmaAllocationInfo allocInfo{};
+    vmaGetAllocationInfo(_engine->_deviceManager->allocator(), gpuSceneDataBuffer.allocation, &allocInfo);
+    auto *sceneUniformData = static_cast<GPUSceneData *>(allocInfo.pMappedData);
     *sceneUniformData = _engine->sceneData;
 
     VkDescriptorSet globalDescriptor = _engine->get_current_frame()._frameDescriptors.allocate(

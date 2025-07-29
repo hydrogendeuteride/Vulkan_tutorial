@@ -31,6 +31,10 @@ public:
 
     void executeAll(VkCommandBuffer cmd) const;
 
+    void setImGuiPass(std::unique_ptr<IRenderPass> imguiPass);
+
+    void executeImGui(VkCommandBuffer cmd, VkImageView targetImageView);
+
     template<typename T>
     T *getPass()
     {
@@ -47,4 +51,5 @@ public:
 private:
     VulkanEngine *_engine = nullptr;
     std::vector<std::unique_ptr<IRenderPass> > _passes;
+    std::unique_ptr<IRenderPass> _imguiPass = nullptr;
 };
