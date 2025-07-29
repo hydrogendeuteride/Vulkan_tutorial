@@ -39,7 +39,7 @@ void VulkanEngine::init()
     constexpr auto window_flags = static_cast<SDL_WindowFlags>(SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE);
 
     _swapchainManager = std::make_unique<SwapchainManager>();
-    
+
     _window = SDL_CreateWindow(
         "Vulkan Engine",
         SDL_WINDOWPOS_UNDEFINED,
@@ -59,10 +59,13 @@ void VulkanEngine::init()
     _swapchainManager->init_swapchain();
 
     _renderPassManager = std::make_unique<RenderPassManager>();
+
+    compute.init(this);
+
     _renderPassManager->init(this);
 
-    // Initialize compute manager early to ensure it's ready for render passes
-    compute.init(this);
+    auto imguiPass = std::make_unique<ImGuiPass>();
+    _renderPassManager->setImGuiPass(std::move(imguiPass));
 
     init_commands();
 
@@ -72,22 +75,9 @@ void VulkanEngine::init()
 
     init_descriptors();
 
+    init_pipelines();
+
     init_default_data();
-
-    auto backgroundPass = std::make_unique<BackgroundPass>();
-    auto geometryPass = std::make_unique<GeometryPass>();
-    auto lightingPass = std::make_unique<LightingPass>();
-    auto imguiPass = std::make_unique<ImGuiPass>();
-
-    backgroundPass->init(this);
-    geometryPass->init(this);
-    lightingPass->init(this);
-    imguiPass->init(this);
-
-    _renderPassManager->addPass(std::move(backgroundPass));
-    _renderPassManager->addPass(std::move(geometryPass));
-    _renderPassManager->addPass(std::move(lightingPass));
-    _renderPassManager->setImGuiPass(std::move(imguiPass));
 
     mainCamera.velocity = glm::vec3(0.f);
     mainCamera.position = glm::vec3(30.f, -00.f, -085.f);
@@ -153,7 +143,7 @@ void VulkanEngine::init_default_data()
 
     VmaAllocationInfo allocInfo{};
     vmaGetAllocationInfo(_deviceManager->allocator(), matBuffer.allocation, &allocInfo);
-    auto *matConstants = (GLTFMetallic_Roughness::MaterialConstants *)allocInfo.pMappedData;
+    auto *matConstants = (GLTFMetallic_Roughness::MaterialConstants *) allocInfo.pMappedData;
     *matConstants = {};
     matConstants->colorFactors = glm::vec4(1.0f);
     matResources.dataBuffer = matBuffer.buffer;
@@ -203,6 +193,20 @@ void VulkanEngine::init_default_data()
         sphereMesh->surfaces.push_back(surf);
     }
 
+    _mainDeletionQueue.push_function([&]() {
+        // Clean up mesh buffers
+        if (cubeMesh)
+        {
+            _resourceManager->destroy_buffer(cubeMesh->meshBuffers.indexBuffer);
+            _resourceManager->destroy_buffer(cubeMesh->meshBuffers.vertexBuffer);
+        }
+        if (sphereMesh)
+        {
+            _resourceManager->destroy_buffer(sphereMesh->meshBuffers.indexBuffer);
+            _resourceManager->destroy_buffer(sphereMesh->meshBuffers.vertexBuffer);
+        }
+    });
+
     _mainDeletionQueue.push_function([=]() { _resourceManager->destroy_buffer(matBuffer); });
 
     _mainDeletionQueue.push_function([&]() {
@@ -225,6 +229,12 @@ void VulkanEngine::cleanup()
         //make sure the gpu has stopped doing its things
         vkDeviceWaitIdle(_deviceManager->device());
 
+        // Flush all frame deletion queues first while VMA allocator is still alive
+        for (int i = 0; i < FRAME_OVERLAP; i++)
+        {
+            _frames[i]._deletionQueue.flush();
+        }
+
         for (int i = 0; i < FRAME_OVERLAP; i++)
         {
             vkDestroyCommandPool(_deviceManager->device(), _frames[i]._commandPool, nullptr);
@@ -233,16 +243,19 @@ void VulkanEngine::cleanup()
             vkDestroyFence(_deviceManager->device(), _frames[i]._renderFence, nullptr);
             vkDestroySemaphore(_deviceManager->device(), _frames[i]._renderSemaphore, nullptr);
             vkDestroySemaphore(_deviceManager->device(), _frames[i]._swapchainSemaphore, nullptr);
-
-            _frames[i]._deletionQueue.flush();
         }
 
         metalRoughMaterial.clear_resources(_deviceManager->device());
 
         _mainDeletionQueue.flush();
+
+        _renderPassManager->cleanup();
+
         compute.cleanup();
 
-        _swapchainManager->destroy_swapchain();
+        _swapchainManager->cleanup();
+
+        _resourceManager->cleanup();
 
         _deviceManager->cleanup();
 
@@ -406,7 +419,8 @@ void VulkanEngine::run()
 
             ImGui::Text("Selected effect: ", selected.name);
 
-            ImGui::SliderInt("Effect Index", &background_pass->_currentEffect, 0, background_pass->_backgroundEffects.size() - 1);
+            ImGui::SliderInt("Effect Index", &background_pass->_currentEffect, 0,
+                             background_pass->_backgroundEffects.size() - 1);
 
             ImGui::InputFloat4("data1", reinterpret_cast<float *>(&selected.data.data1));
             ImGui::InputFloat4("data2", reinterpret_cast<float *>(&selected.data.data2));

@@ -231,8 +231,6 @@ private:
 
 	void init_sync_structures();
 
-	// void init_imgui();
-
 	void init_default_samplers();
 
 	void init_default_data();

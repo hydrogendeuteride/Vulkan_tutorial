@@ -75,9 +75,10 @@ void DeviceManager::init_vulkan(SDL_Window *window)
 
 void DeviceManager::cleanup()
 {
-    _deletionQueue.flush();
     vkDestroySurfaceKHR(_instance, _surface, nullptr);
+    _deletionQueue.flush();
     vkDestroyDevice(_device, nullptr);
     vkb::destroy_debug_utils_messenger(_instance, _debug_messenger);
     vkDestroyInstance(_instance, nullptr);
+    fmt::print("DeviceManager::cleanup()\n");
 }

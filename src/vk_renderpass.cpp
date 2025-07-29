@@ -28,6 +28,7 @@ void RenderPassManager::cleanup()
     {
         pass->cleanup();
     }
+    fmt::print("RenderPassManager::cleanup()\n");
     _passes.clear();
 }
 

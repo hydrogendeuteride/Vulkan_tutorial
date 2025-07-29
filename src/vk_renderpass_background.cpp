@@ -58,5 +58,6 @@ void BackgroundPass::cleanup()
         _engine->compute.unregisterPipeline("gradient");
         _engine->compute.unregisterPipeline("sky");
     }
+    fmt::print("RenderPassManager::cleanup()\n");
     _backgroundEffects.clear();
 }

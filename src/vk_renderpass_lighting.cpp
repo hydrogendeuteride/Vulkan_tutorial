@@ -82,5 +82,5 @@ void LightingPass::draw_lighting(VkCommandBuffer cmd)
 
 void LightingPass::cleanup()
 {
-
+    fmt::print("LightingPass::cleanup()\n");
 }

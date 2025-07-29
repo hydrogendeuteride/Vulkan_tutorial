@@ -74,6 +74,7 @@ void ResourceManager::destroy_buffer(const AllocatedBuffer &buffer) const
 
 void ResourceManager::cleanup()
 {
+    fmt::print("ResourceManager::cleanup()\n");
     _deletionQueue.flush();
 }
 

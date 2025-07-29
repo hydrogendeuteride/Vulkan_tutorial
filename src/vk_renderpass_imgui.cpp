@@ -8,6 +8,8 @@
 
 void ImGuiPass::init(VulkanEngine *engine)
 {
+    _engine = engine;
+
     VkDescriptorPoolSize pool_sizes[] = {
         {VK_DESCRIPTOR_TYPE_SAMPLER, 1000},
         {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000},
@@ -66,6 +68,8 @@ void ImGuiPass::init(VulkanEngine *engine)
 
 void ImGuiPass::cleanup()
 {
+    fmt::print("ImGuiPass::cleanup()\n");
+    _deletionQueue.flush();
 }
 
 void ImGuiPass::execute(VkCommandBuffer cmd)

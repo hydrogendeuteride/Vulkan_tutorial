@@ -86,6 +86,7 @@ void SwapchainManager::cleanup()
 {
     _deletionQueue.flush();
     destroy_swapchain();
+    fmt::print("SwapchainManager::cleanup()\n");
 }
 
 void SwapchainManager::create_swapchain(uint32_t width, uint32_t height)

@@ -212,5 +212,5 @@ auto start = std::chrono::system_clock::now();
 
 void GeometryPass::cleanup()
 {
-
+    fmt::print("GeometryPass::cleanup()\n");
 }
