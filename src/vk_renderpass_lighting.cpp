@@ -47,7 +47,7 @@ void LightingPass::draw_lighting(VkCommandBuffer cmd)
     VmaAllocationInfo allocInfo{};
     vmaGetAllocationInfo(_engine->_deviceManager->allocator(), gpuSceneDataBuffer.allocation, &allocInfo);
     auto *sceneUniformData = static_cast<GPUSceneData *>(allocInfo.pMappedData);
-    *sceneUniformData = _engine->sceneData;
+    *sceneUniformData = _engine->_sceneManager->getSceneData();
 
     VkDescriptorSet globalDescriptor = _engine->get_current_frame()._frameDescriptors.allocate(
         _engine->_deviceManager->device(), _engine->_gpuSceneDataDescriptorLayout);

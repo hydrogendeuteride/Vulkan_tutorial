@@ -67,26 +67,27 @@ void GeometryPass::execute(VkCommandBuffer cmd)
 
 void GeometryPass::draw_geometry(VkCommandBuffer cmd) const
 {
-auto start = std::chrono::system_clock::now();
+    auto& mainDrawContext = _engine->_sceneManager->getMainDrawContext();
+    auto& sceneData = _engine->_sceneManager->getSceneData();
+
+    auto start = std::chrono::system_clock::now();
 
     std::vector<uint32_t> opaque_draws;
-    opaque_draws.reserve(_engine->mainDrawContext.OpaqueSurfaces.size());
+    opaque_draws.reserve(mainDrawContext.OpaqueSurfaces.size());
 
-    for (int i = 0; i < _engine->mainDrawContext.OpaqueSurfaces.size(); i++)
+    for (int i = 0; i < mainDrawContext.OpaqueSurfaces.size(); i++)
     {
-        if (is_visible(_engine->mainDrawContext.OpaqueSurfaces[i], _engine->sceneData.viewproj))
-        {
-            opaque_draws.push_back(i);
-        }
-    }
-    for (int i = 0; i < _engine->mainDrawContext.OpaqueSurfaces.size(); i++)
-    {
+        // if (is_visible(mainDrawContext.OpaqueSurfaces[i], sceneData.viewproj))
+        // {
+        //     opaque_draws.push_back(i);
+        // }
+
         opaque_draws.push_back(i);
     }
 
     std::sort(opaque_draws.begin(), opaque_draws.end(), [&](const auto &iA, const auto &iB) {
-        const RenderObject &A = _engine->mainDrawContext.OpaqueSurfaces[iA];
-        const RenderObject &B = _engine->mainDrawContext.OpaqueSurfaces[iB];
+        const RenderObject &A = mainDrawContext.OpaqueSurfaces[iA];
+        const RenderObject &B = mainDrawContext.OpaqueSurfaces[iB];
         if (A.material == B.material)
         {
             return A.indexBuffer < B.indexBuffer;
@@ -124,7 +125,7 @@ auto start = std::chrono::system_clock::now();
     VmaAllocationInfo allocInfo{};
     vmaGetAllocationInfo(_engine->_deviceManager->allocator(), gpuSceneDataBuffer.allocation, &allocInfo);
     auto *sceneUniformData = static_cast<GPUSceneData *>(allocInfo.pMappedData);
-    *sceneUniformData = _engine->sceneData;
+    *sceneUniformData = sceneData;
 
     //create a descriptor set that binds that buffer and update it
     VkDescriptorSet globalDescriptor = _engine->get_current_frame()._frameDescriptors.allocate(
@@ -194,10 +195,10 @@ auto start = std::chrono::system_clock::now();
 
     for (auto &r: opaque_draws)
     {
-        draw(_engine->mainDrawContext.OpaqueSurfaces[r]);
+        draw(mainDrawContext.OpaqueSurfaces[r]);
     }
 
-    for (auto &r: _engine->mainDrawContext.TransparentSurfaces)
+    for (auto &r: mainDrawContext.TransparentSurfaces)
     {
         draw(r);
     }

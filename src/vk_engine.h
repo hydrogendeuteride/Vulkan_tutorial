@@ -19,6 +19,7 @@
 #include "vk_renderpass_background.h"
 #include "vk_resource.h"
 #include "vk_swapchain.h"
+#include "vk_scene.h"
 
 struct FrameData
 {
@@ -84,25 +85,6 @@ struct GLTFMetallic_Roughness
 	                                DescriptorAllocatorGrowable &descriptorAllocator);
 };
 
-struct RenderObject
-{
-	uint32_t indexCount;
-	uint32_t firstIndex;
-	VkBuffer indexBuffer;
-
-	MaterialInstance *material;
-	Bounds bounds;
-
-	glm::mat4 transform;
-	VkDeviceAddress vertexBufferAddress;
-};
-
-struct DrawContext
-{
-	std::vector<RenderObject> OpaqueSurfaces;
-	std::vector<RenderObject> TransparentSurfaces;
-};
-
 struct RenderPass
 {
 	std::string name;
@@ -135,8 +117,7 @@ public:
 	std::unique_ptr<SwapchainManager> _swapchainManager;
 	std::unique_ptr<ResourceManager> _resourceManager;
 	std::unique_ptr<RenderPassManager> _renderPassManager;
-
-	Camera mainCamera;
+	std::unique_ptr<SceneManager> _sceneManager;
 
 	struct SDL_Window *_window{nullptr};
 
@@ -160,7 +141,6 @@ public:
 	VkPipeline _meshPipeline;
 
 	GPUMeshBuffers rectangle;
-	DrawContext drawCommands;
 
 	std::shared_ptr<MeshAsset> cubeMesh;
 	std::shared_ptr<MeshAsset> sphereMesh;
@@ -173,8 +153,6 @@ public:
 	VkSampler _defaultSamplerLinear;
 	VkSampler _defaultSamplerNearest;
 
-	//draw resources
-	DrawContext mainDrawContext;
 	MaterialInstance defaultData;
 
 	GLTFMetallic_Roughness metalRoughMaterial;
@@ -188,11 +166,6 @@ public:
 	VkPipelineLayout _lightingPipelineLayout;
 	VkPipeline _lightingPipeline;
 
-	std::unordered_map<std::string, std::shared_ptr<Node> > loadedNodes;
-
-	std::unordered_map<std::string, std::shared_ptr<LoadedGLTF> > loadedScenes;
-
-	GPUSceneData sceneData;
 	VkDescriptorSetLayout _gpuSceneDataDescriptorLayout;
 
 	EngineStats stats;
@@ -207,10 +180,6 @@ public:
 
 	//draw loop
 	void draw();
-
-	// void draw_imgui(VkCommandBuffer cmd, VkImageView targetImageView) const;
-
-	void update_scene();
 
 	//run main loop
 	void run();

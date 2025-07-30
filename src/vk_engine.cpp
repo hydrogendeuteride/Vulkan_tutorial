@@ -58,6 +58,9 @@ void VulkanEngine::init()
     _swapchainManager->init(_deviceManager.get(), _resourceManager.get());
     _swapchainManager->init_swapchain();
 
+    _sceneManager = std::make_unique<SceneManager>();
+    _sceneManager->init(this);
+
     _renderPassManager = std::make_unique<RenderPassManager>();
 
     compute.init(this);
@@ -79,22 +82,12 @@ void VulkanEngine::init()
 
     init_default_data();
 
-    mainCamera.velocity = glm::vec3(0.f);
-    mainCamera.position = glm::vec3(30.f, -00.f, -085.f);
-
-    mainCamera.pitch = 0;
-    mainCamera.yaw = 0;
-
     const std::string structurePath = {"../assets/structure.glb"};
     const auto structureFile = loadGltf(this, structurePath);
 
     assert(structureFile.has_value());
 
-    loadedScenes["structure"] = *structureFile;
-
-    sceneData.ambientColor = glm::vec4(0.1f, 0.1f, 0.1f, 1.0f);
-    sceneData.sunlightDirection = glm::vec4(-1.0f, -1.0f, -1.0f, 1.0f);
-    sceneData.sunlightColor = glm::vec4(1.0f, 1.0f, 1.0f, 3.0f);
+    _sceneManager->loadScene("structure", *structureFile);
 
     //everything went fine
     _isInitialized = true;
@@ -222,7 +215,7 @@ void VulkanEngine::cleanup()
 {
     vkDeviceWaitIdle(_deviceManager->device());
 
-    loadedScenes.clear();
+    _sceneManager->cleanup();
 
     if (_isInitialized)
     {
@@ -265,7 +258,7 @@ void VulkanEngine::cleanup()
 
 void VulkanEngine::draw()
 {
-    update_scene();
+    _sceneManager->update_scene();
     //> frame_clear
     //wait until the gpu has finished rendering the last frame. Timeout of 1 second
     VK_CHECK(vkWaitForFences(_deviceManager->device(), 1, &get_current_frame()._renderFence, true, 1000000000));
@@ -390,7 +383,7 @@ void VulkanEngine::run()
                     freeze_rendering = false;
                 }
             }
-            mainCamera.processSDLEvent(e);
+            _sceneManager->getMainCamera().processSDLEvent(e);
             ImGui_ImplSDL2_ProcessEvent(&e);
         }
 
@@ -436,7 +429,7 @@ void VulkanEngine::run()
         {
             ImGui::Text("frametime %f ms", stats.frametime);
             ImGui::Text("draw time %f ms", stats.mesh_draw_time);
-            ImGui::Text("update time %f ms", stats.scene_update_time);
+            ImGui::Text("update time %f ms", _sceneManager->stats.scene_update_time);
             ImGui::Text("triangles %i", stats.triangle_count);
             ImGui::Text("draws %i", stats.drawcall_count);
             ImGui::End();
@@ -450,59 +443,6 @@ void VulkanEngine::run()
         auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
         stats.frametime = elapsed.count() / 1000.f;
     }
-}
-
-void VulkanEngine::update_scene()
-{
-    mainDrawContext.OpaqueSurfaces.clear();
-    mainDrawContext.TransparentSurfaces.clear();
-
-    mainCamera.update();
-
-    loadedScenes["structure"]->Draw(glm::mat4{1.f}, mainDrawContext);
-
-    if (cubeMesh)
-    {
-        const GeoSurface &surf = cubeMesh->surfaces[0];
-        RenderObject obj{};
-        obj.indexCount = surf.count;
-        obj.firstIndex = surf.startIndex;
-        obj.indexBuffer = cubeMesh->meshBuffers.indexBuffer.buffer;
-        obj.vertexBufferAddress = cubeMesh->meshBuffers.vertexBufferAddress;
-        obj.material = &surf.material->data;
-        obj.bounds = surf.bounds;
-        obj.transform = glm::translate(glm::mat4(1.f), glm::vec3(-2.f, 0.f, -2.f));
-        mainDrawContext.OpaqueSurfaces.push_back(obj);
-    }
-
-    if (sphereMesh)
-    {
-        const auto &[startIndex, count, bounds, material] = sphereMesh->surfaces[0];
-        RenderObject obj{};
-        obj.indexCount = count;
-        obj.firstIndex = startIndex;
-        obj.indexBuffer = sphereMesh->meshBuffers.indexBuffer.buffer;
-        obj.vertexBufferAddress = sphereMesh->meshBuffers.vertexBufferAddress;
-        obj.material = &material->data;
-        obj.bounds = bounds;
-        obj.transform = glm::translate(glm::mat4(1.f), glm::vec3(2.f, 0.f, -2.f));
-        mainDrawContext.OpaqueSurfaces.push_back(obj);
-    }
-
-    glm::mat4 view = mainCamera.getViewMatrix();
-
-    // camera projection
-    glm::mat4 projection = glm::perspective(glm::radians(70.f),
-                                            (float) _swapchainManager->windowExtent().width / (float) _swapchainManager
-                                            ->windowExtent().height, 10000.f, 0.1f);
-
-    // invert the Y direction on projection matrix so that we are more similar
-    // to opengl and gltf axis
-    projection[1][1] *= -1;
-
-    sceneData.view = view;
-    sceneData.proj = projection;
-    sceneData.viewproj = projection * view;
 }
 
 void VulkanEngine::init_commands()
