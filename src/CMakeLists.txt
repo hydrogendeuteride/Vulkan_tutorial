@@ -2,45 +2,62 @@
 # Add source to this project's executable.
 add_executable (engine 
   main.cpp
-  vk_types.h
-  vk_initializers.cpp
-  vk_initializers.h
-  vk_images.h
-  vk_images.cpp 
-  vk_descriptors.h
-  vk_descriptors.cpp
-  vk_pipelines.h
-  vk_pipelines.cpp
-  vk_compute.cpp
-  vk_engine.h
-  vk_engine.cpp
-  vk_loader.h
-  vk_loader.cpp
-  camera.cpp
-  camera.h
-        vk_device.h
-        vk_device.cpp
-        vk_swapchain.h
-        vk_swapchain.cpp
-        vk_resource.h
-        vk_resource.cpp
-        vk_renderpass.h
-        vk_renderpass_background.h
-        vk_renderpass_background.cpp
-        vk_renderpass_geometry.h
-        vk_renderpass_geometry.cpp
-        vk_renderpass_lighting.h
-        vk_renderpass_lighting.cpp
-        vk_renderpass.cpp
-        vk_renderpass_imgui.h
-        vk_renderpass_imgui.cpp
-        vk_scene.h
-        vk_scene.cpp
+  # core
+  core/vk_types.h
+  core/vk_initializers.cpp
+  core/vk_initializers.h
+  core/vk_images.h
+  core/vk_images.cpp 
+  core/vk_descriptors.h
+  core/vk_descriptors.cpp
+  core/vk_device.h
+  core/vk_device.cpp
+  core/vk_swapchain.h
+  core/vk_swapchain.cpp
+  core/vk_resource.h
+  core/vk_resource.cpp
+  core/frame_resources.h
+  core/frame_resources.cpp
+  core/config.h
+  core/vk_engine.h
+  core/vk_engine.cpp
+  # render
+  render/vk_pipelines.h
+  render/vk_pipelines.cpp
+  render/vk_renderpass.h
+  render/vk_renderpass.cpp
+  render/vk_renderpass_background.h
+  render/vk_renderpass_background.cpp
+  render/vk_renderpass_geometry.h
+  render/vk_renderpass_geometry.cpp
+  render/vk_renderpass_lighting.h
+  render/vk_renderpass_lighting.cpp
+  render/vk_renderpass_imgui.h
+  render/vk_renderpass_imgui.cpp
+  render/vk_materials.h
+  render/vk_materials.cpp
+  render/primitives.h
+  # scene
+  scene/vk_scene.h
+  scene/vk_scene.cpp
+  scene/vk_loader.h
+  scene/vk_loader.cpp
+  scene/camera.h
+  scene/camera.cpp
+  # compute
+  compute/vk_compute.h
+  compute/vk_compute.cpp
 )
 
 set_property(TARGET engine PROPERTY CXX_STANDARD 20)
 target_compile_definitions(engine PUBLIC GLM_FORCE_DEPTH_ZERO_TO_ONE)
-target_include_directories(engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
+target_include_directories(engine PUBLIC 
+  "${CMAKE_CURRENT_SOURCE_DIR}"
+  "${CMAKE_CURRENT_SOURCE_DIR}/core"
+  "${CMAKE_CURRENT_SOURCE_DIR}/render"
+  "${CMAKE_CURRENT_SOURCE_DIR}/scene"
+  "${CMAKE_CURRENT_SOURCE_DIR}/compute"
+)
 
 target_link_libraries(engine PUBLIC vma glm Vulkan::Vulkan fmt::fmt stb_image SDL2::SDL2 vkbootstrap imgui fastgltf::fastgltf)
 
