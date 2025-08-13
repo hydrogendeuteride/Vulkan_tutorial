@@ -5,20 +5,20 @@
 #include "vk_renderpass_imgui.h"
 #include "vk_renderpass_lighting.h"
 
-void RenderPassManager::init(VulkanEngine *engine)
+void RenderPassManager::init(EngineContext *context)
 {
-    _engine = engine;
+    _context = context;
 
     auto backgroundPass = std::make_unique<BackgroundPass>();
-    backgroundPass->init(engine);
+    backgroundPass->init(context);
     addPass(std::move(backgroundPass));
 
     auto geometryPass = std::make_unique<GeometryPass>();
-    geometryPass->init(engine);
+    geometryPass->init(context);
     addPass(std::move(geometryPass));
 
     auto lightingPass = std::make_unique<LightingPass>();
-    lightingPass->init(engine);
+    lightingPass->init(context);
     addPass(std::move(lightingPass));
 }
 
@@ -48,7 +48,7 @@ void RenderPassManager::executeAll(VkCommandBuffer cmd) const
 void RenderPassManager::setImGuiPass(std::unique_ptr<IRenderPass> imguiPass)
 {
     _imguiPass = std::move(imguiPass);
-    _imguiPass->init(_engine);
+    _imguiPass->init(_context);
 }
 
 void RenderPassManager::executeImGui(VkCommandBuffer cmd, VkImageView targetImageView)

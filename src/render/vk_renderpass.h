@@ -4,14 +4,14 @@
 #include <memory>
 #include <functional>
 
-class VulkanEngine;
+class EngineContext;
 
 class IRenderPass
 {
 public:
     virtual ~IRenderPass() = default;
 
-    virtual void init(VulkanEngine *engine) = 0;
+    virtual void init(EngineContext *context) = 0;
 
     virtual void cleanup() = 0;
 
@@ -23,7 +23,7 @@ public:
 class RenderPassManager
 {
 public:
-    void init(VulkanEngine *engine);
+    void init(EngineContext *context);
 
     void cleanup();
 
@@ -49,7 +49,7 @@ public:
     }
 
 private:
-    VulkanEngine *_engine = nullptr;
+    EngineContext *_context = nullptr;
     std::vector<std::unique_ptr<IRenderPass> > _passes;
     std::unique_ptr<IRenderPass> _imguiPass = nullptr;
 };

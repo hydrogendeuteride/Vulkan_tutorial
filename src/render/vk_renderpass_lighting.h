@@ -4,7 +4,7 @@
 class LightingPass : public IRenderPass
 {
 public:
-    void init(VulkanEngine *engine) override;
+    void init(EngineContext *context) override;
 
     void cleanup() override;
 
@@ -13,7 +13,7 @@ public:
     const char *getName() const override { return "Lighting"; }
 
 private:
-    VulkanEngine *_engine = nullptr;
+    EngineContext *_context = nullptr;
 
     VkDescriptorSetLayout _gBufferInputDescriptorLayout = VK_NULL_HANDLE;
     VkDescriptorSet _gBufferInputDescriptorSet = VK_NULL_HANDLE;
@@ -22,4 +22,6 @@ private:
     VkPipeline _pipeline = VK_NULL_HANDLE;
 
     void draw_lighting(VkCommandBuffer cmd);
+
+    DeletionQueue _deletionQueue;
 };

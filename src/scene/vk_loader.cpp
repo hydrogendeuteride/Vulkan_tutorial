@@ -293,9 +293,9 @@ std::optional<std::shared_ptr<LoadedGLTF> > loadGltf(VulkanEngine *engine, std::
         GLTFMetallic_Roughness::MaterialResources materialResources;
         // default the material textures
         materialResources.colorImage = engine->_whiteImage;
-        materialResources.colorSampler = engine->_defaultSamplerLinear;
+        materialResources.colorSampler = engine->_samplerManager->defaultLinear();
         materialResources.metalRoughImage = engine->_whiteImage;
-        materialResources.metalRoughSampler = engine->_defaultSamplerLinear;
+        materialResources.metalRoughSampler = engine->_samplerManager->defaultLinear();
 
         // set the uniform buffer for the material data
         materialResources.dataBuffer = file.materialDataBuffer.buffer;

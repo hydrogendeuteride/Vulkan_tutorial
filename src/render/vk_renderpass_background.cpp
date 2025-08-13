@@ -1,11 +1,13 @@
 #include "vk_renderpass_background.h"
-#include "core/vk_engine.h"
+
+#include "vk_swapchain.h"
+#include "core/engine_context.h"
 #include "core/vk_images.h"
 #include "core/vk_resource.h"
 
-void BackgroundPass::init(VulkanEngine *engine)
+void BackgroundPass::init(EngineContext *context)
 {
-    _engine = engine;
+    _context = context;
     init_background_pipelines();
 }
 
@@ -15,10 +17,10 @@ void BackgroundPass::init_background_pipelines()
     createInfo.shaderPath = "../shaders/gradient_color.comp.spv";
     createInfo.descriptorTypes = {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE};
     createInfo.pushConstantSize = sizeof(ComputePushConstants);
-    _engine->compute.registerPipeline("gradient", createInfo);
+    _context->compute->registerPipeline("gradient", createInfo);
 
     createInfo.shaderPath = "../shaders/sky.comp.spv";
-    _engine->compute.registerPipeline("sky", createInfo);
+    _context->compute->registerPipeline("sky", createInfo);
 
     ComputeEffect gradient{};
     gradient.name = "gradient";
@@ -35,28 +37,28 @@ void BackgroundPass::init_background_pipelines()
 
 void BackgroundPass::execute(VkCommandBuffer cmd)
 {
-    vkutil::transition_image(cmd, _engine->_swapchainManager->depthImage().image, VK_IMAGE_LAYOUT_UNDEFINED,
+    vkutil::transition_image(cmd, _context->getSwapchain()->depthImage().image, VK_IMAGE_LAYOUT_UNDEFINED,
                              VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
-    vkutil::transition_image(cmd, _engine->_swapchainManager->depthImage().image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+    vkutil::transition_image(cmd, _context->getSwapchain()->depthImage().image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                              VK_IMAGE_LAYOUT_GENERAL);
 
     ComputeEffect &effect = _backgroundEffects[_currentEffect];
 
     ComputeDispatchInfo dispatchInfo = ComputeManager::createDispatch2D(
-        _engine->_drawExtent.width, _engine->_drawExtent.height);
-    dispatchInfo.bindings.push_back(ComputeBinding::storeImage(0, _engine->_swapchainManager->drawImage().imageView));
+        _context->drawExtent.width, _context->drawExtent.height);
+    dispatchInfo.bindings.push_back(ComputeBinding::storeImage(0, _context->getSwapchain()->drawImage().imageView));
     dispatchInfo.pushConstants = &effect.data;
     dispatchInfo.pushConstantSize = sizeof(ComputePushConstants);
 
-    _engine->compute.dispatch(cmd, effect.name, dispatchInfo);
+    _context->compute->dispatch(cmd, effect.name, dispatchInfo);
 }
 
 void BackgroundPass::cleanup()
 {
-    if (_engine)
+    if (_context && _context->compute)
     {
-        _engine->compute.unregisterPipeline("gradient");
-        _engine->compute.unregisterPipeline("sky");
+        _context->compute->unregisterPipeline("gradient");
+        _context->compute->unregisterPipeline("sky");
     }
     fmt::print("RenderPassManager::cleanup()\n");
     _backgroundEffects.clear();

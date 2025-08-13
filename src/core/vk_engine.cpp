@@ -26,6 +26,7 @@
 #include "render/vk_renderpass_imgui.h"
 #include "render/vk_renderpass_lighting.h"
 #include "vk_resource.h"
+#include "engine_context.h"
 
 VulkanEngine *loadedEngine = nullptr;
 
@@ -47,36 +48,61 @@ void VulkanEngine::init()
         window_flags
     );
 
-    _deviceManager = std::make_unique<DeviceManager>();
+    _deviceManager = std::make_shared<DeviceManager>();
     _deviceManager->init_vulkan(_window);
 
-    _resourceManager = std::make_unique<ResourceManager>();
+    _resourceManager = std::make_shared<ResourceManager>();
     _resourceManager->init(_deviceManager.get());
+
+    _descriptorManager = std::make_unique<DescriptorManager>();
+    _descriptorManager->init(_deviceManager.get());
+
+    _samplerManager = std::make_unique<SamplerManager>();
+    _samplerManager->init(_deviceManager.get());
+
+    // Build dependency-injection context
+    _context = std::make_shared<EngineContext>();
+    _context->device = _deviceManager;
+    _context->resources = _resourceManager;
+    _context->descriptors = std::make_shared<DescriptorAllocatorGrowable>();
+    {
+        std::vector<DescriptorAllocatorGrowable::PoolSizeRatio> sizes = {
+            {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1},
+            {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1},
+            {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 4},
+        };
+        _context->descriptors->init(_deviceManager->device(), 10, sizes);
+    }
 
     _swapchainManager->init(_deviceManager.get(), _resourceManager.get());
     _swapchainManager->init_swapchain();
 
+    // Fill remaining context pointers now that managers exist
+    _context->descriptorLayouts = _descriptorManager.get();
+    _context->samplers = _samplerManager.get();
+    _context->swapchain = _swapchainManager.get();
+
     _sceneManager = std::make_unique<SceneManager>();
-    _sceneManager->init(this);
+    _sceneManager->init(_context.get());
+    _context->scene = _sceneManager.get();
 
-    _renderPassManager = std::make_unique<RenderPassManager>();
-
-    compute.init(this);
-
-    _renderPassManager->init(this);
-
-    auto imguiPass = std::make_unique<ImGuiPass>();
-    _renderPassManager->setImGuiPass(std::move(imguiPass));
+    compute.init(_context.get());
+    // Publish engine-owned subsystems into context for modules
+    _context->compute = &compute;
+    _context->window = _window;
+    _context->stats = &stats;
 
     init_frame_resources();
-
-    init_default_samplers();
-
-    init_descriptors();
 
     init_pipelines();
 
     init_default_data();
+
+    _renderPassManager = std::make_unique<RenderPassManager>();
+    _renderPassManager->init(_context.get());
+
+    auto imguiPass = std::make_unique<ImGuiPass>();
+    _renderPassManager->setImGuiPass(std::move(imguiPass));
 
     const std::string structurePath = {"../assets/structure.glb"};
     const auto structureFile = loadGltf(this, structurePath);
@@ -122,9 +148,9 @@ void VulkanEngine::init_default_data()
     //create a simple white material that we can use for generated meshes
     GLTFMetallic_Roughness::MaterialResources matResources{};
     matResources.colorImage = _whiteImage;
-    matResources.colorSampler = _defaultSamplerLinear;
+    matResources.colorSampler = _samplerManager->defaultLinear();
     matResources.metalRoughImage = _whiteImage;
-    matResources.metalRoughSampler = _defaultSamplerLinear;
+    matResources.metalRoughSampler = _samplerManager->defaultLinear();
 
     AllocatedBuffer matBuffer = _resourceManager->create_buffer(sizeof(GLTFMetallic_Roughness::MaterialConstants),
                                                                 VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
@@ -139,8 +165,9 @@ void VulkanEngine::init_default_data()
     matResources.dataBufferOffset = 0;
 
     auto defaultMaterial = std::make_shared<GLTFMaterial>();
-    defaultMaterial->data = metalRoughMaterial.write_material(_deviceManager->device(), MaterialPass::MainColor,
-                                                              matResources, globalDescriptorAllocator);
+    defaultMaterial->data = metalRoughMaterial.write_material(
+        _deviceManager->device(), MaterialPass::MainColor,
+        matResources, *_context->descriptors);
 
     //build cube mesh
     {
@@ -196,6 +223,10 @@ void VulkanEngine::init_default_data()
         }
     });
 
+    // Expose default meshes to context for modules that need them
+    _context->cubeMesh = cubeMesh;
+    _context->sphereMesh = sphereMesh;
+
     _mainDeletionQueue.push_function([=]() { _resourceManager->destroy_buffer(matBuffer); });
 
     _mainDeletionQueue.push_function([&]() {
@@ -239,6 +270,12 @@ void VulkanEngine::cleanup()
         _swapchainManager->cleanup();
 
         _resourceManager->cleanup();
+
+        _samplerManager->cleanup();
+        _descriptorManager->cleanup();
+        if (_context && _context->descriptors) {
+            _context->descriptors->destroy_pools(_deviceManager->device());
+        }
 
         _deviceManager->cleanup();
 
@@ -288,6 +325,9 @@ void VulkanEngine::draw()
     //---------------------------
     VK_CHECK(vkBeginCommandBuffer(cmd, &cmdBeginInfo));
 
+    // publish per-frame pointers and draw extent to context for passes
+    _context->currentFrame = &get_current_frame();
+    _context->drawExtent = _drawExtent;
     _renderPassManager->executeAll(cmd);
 
     //transtion the draw image and the swapchain image into their correct transfer layouts
@@ -433,8 +473,6 @@ void VulkanEngine::run()
     }
 }
 
-void VulkanEngine::init_commands() {}
-
 void VulkanEngine::init_frame_resources()
 {
     // descriptor pool sizes per-frame
@@ -451,68 +489,12 @@ void VulkanEngine::init_frame_resources()
     }
 }
 
-void VulkanEngine::init_default_samplers()
-{
-    VkSamplerCreateInfo sampl = {.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
-
-    sampl.magFilter = VK_FILTER_NEAREST;
-    sampl.minFilter = VK_FILTER_NEAREST;
-
-    vkCreateSampler(_deviceManager->device(), &sampl, nullptr, &_defaultSamplerNearest);
-
-    sampl.magFilter = VK_FILTER_LINEAR;
-    sampl.minFilter = VK_FILTER_LINEAR;
-    vkCreateSampler(_deviceManager->device(), &sampl, nullptr, &_defaultSamplerLinear);
-
-    _mainDeletionQueue.push_function([&]() {
-        vkDestroySampler(_deviceManager->device(), _defaultSamplerNearest, nullptr);
-        vkDestroySampler(_deviceManager->device(), _defaultSamplerLinear, nullptr);
-    });
-}
-
 void VulkanEngine::init_pipelines()
 {
     init_mesh_pipeline();
 
     metalRoughMaterial.build_pipelines(this);
 }
-
-void VulkanEngine::init_descriptors()
-{
-    //create a descriptor pool that will hold 10 sets with 1 image each
-    std::vector<DescriptorAllocatorGrowable::PoolSizeRatio> sizes =
-    {
-        {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1},
-        {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1},
-        {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 4}
-    };
-
-    globalDescriptorAllocator.init(_deviceManager->device(), 10, sizes);
-
-    //make the descriptor set layout for our compute draw
-    {
-        DescriptorLayoutBuilder builder;
-        builder.add_binding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-        _singleImageDescriptorLayout = builder.build(_deviceManager->device(), VK_SHADER_STAGE_FRAGMENT_BIT);
-    } {
-        DescriptorLayoutBuilder builder;
-        builder.add_binding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-        _gpuSceneDataDescriptorLayout = builder.build(
-            _deviceManager->device(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
-    }
-
-    //make sure both the descriptor allocator and the new layout get cleaned up properly
-    _mainDeletionQueue.push_function([&]() {
-        globalDescriptorAllocator.destroy_pools(_deviceManager->device());
-
-        vkDestroyDescriptorSetLayout(_deviceManager->device(), _singleImageDescriptorLayout, nullptr);
-        vkDestroyDescriptorSetLayout(_deviceManager->device(), _gpuSceneDataDescriptorLayout, nullptr);
-    });
-
-    // per-frame descriptor pools are initialized in init_frame_resources
-}
-
-
 
 void VulkanEngine::init_mesh_pipeline()
 {
@@ -545,7 +527,8 @@ void VulkanEngine::init_mesh_pipeline()
     VkPipelineLayoutCreateInfo pipeline_layout_info = vkinit::pipeline_layout_create_info();
     pipeline_layout_info.pPushConstantRanges = &bufferRange;
     pipeline_layout_info.pushConstantRangeCount = 1;
-    pipeline_layout_info.pSetLayouts = &_singleImageDescriptorLayout;
+    VkDescriptorSetLayout singleImageLayout = _descriptorManager->singleImageLayout();
+    pipeline_layout_info.pSetLayouts = &singleImageLayout;
     pipeline_layout_info.setLayoutCount = 1;
     VK_CHECK(vkCreatePipelineLayout(_deviceManager->device(), &pipeline_layout_info, nullptr, &_meshPipelineLayout));
 
@@ -586,8 +569,6 @@ void VulkanEngine::init_mesh_pipeline()
         vkDestroyPipeline(_deviceManager->device(), _meshPipeline, nullptr);
     });
 }
-
-void VulkanEngine::init_deferred_pipelines() {}
 
 void MeshNode::Draw(const glm::mat4 &topMatrix, DrawContext &ctx)
 {

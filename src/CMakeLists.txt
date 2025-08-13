@@ -16,6 +16,12 @@ add_executable (engine
   core/vk_swapchain.cpp
   core/vk_resource.h
   core/vk_resource.cpp
+  core/engine_context.h
+  core/engine_context.cpp
+  core/vk_descriptor_manager.h
+  core/vk_descriptor_manager.cpp
+  core/vk_sampler_manager.h
+  core/vk_sampler_manager.cpp
   core/frame_resources.h
   core/frame_resources.cpp
   core/config.h

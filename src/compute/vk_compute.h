@@ -4,8 +4,24 @@
 #include <core/vk_descriptors.h>
 #include <functional>
 #include <unordered_map>
+#include <glm/glm.hpp>
 
-class VulkanEngine;
+// Common compute data structures used across passes
+struct ComputePushConstants
+{
+    glm::vec4 data1;
+    glm::vec4 data2;
+    glm::vec4 data3;
+    glm::vec4 data4;
+};
+
+struct ComputeEffect
+{
+    const char *name;
+    ComputePushConstants data;
+};
+
+class EngineContext;
 
 struct ComputeBinding
 {
@@ -111,7 +127,7 @@ public:
 
     ~ComputeManager();
 
-    void init(VulkanEngine *engine);
+    void init(EngineContext *context);
 
     void cleanup();
 
@@ -135,7 +151,7 @@ public:
                     VkDeviceSize dstOffset = 0);
 
 private:
-    VulkanEngine *engine = nullptr;
+    EngineContext *context = nullptr;
     std::unordered_map<std::string, ComputePipeline> pipelines;
     DescriptorAllocatorGrowable descriptorAllocator;
 

@@ -23,37 +23,19 @@
 #include "render/vk_materials.h"
 
 #include "frame_resources.h"
+#include "vk_descriptor_manager.h"
+#include "vk_sampler_manager.h"
+#include "core/engine_context.h"
 
 constexpr unsigned int FRAME_OVERLAP = 2;
 
-struct ComputePushConstants
-{
-    glm::vec4 data1;
-    glm::vec4 data2;
-    glm::vec4 data3;
-    glm::vec4 data4;
-};
-
-struct ComputeEffect
-{
-    const char *name;
-    ComputePushConstants data;
-};
+// Compute push constants and effects are declared in compute/vk_compute.h now.
 
 
 struct RenderPass
 {
 	std::string name;
 	std::function<void(VkCommandBuffer)> execute;
-};
-
-struct EngineStats
-{
-	float frametime;
-	int triangle_count;
-	int drawcall_count;
-	float scene_update_time;
-	float mesh_draw_time;
 };
 
 struct MeshNode : public Node
@@ -69,11 +51,11 @@ public:
 	bool _isInitialized{false};
 	int _frameNumber{0};
 
-	std::unique_ptr<DeviceManager> _deviceManager;
-	std::unique_ptr<SwapchainManager> _swapchainManager;
-	std::unique_ptr<ResourceManager> _resourceManager;
-	std::unique_ptr<RenderPassManager> _renderPassManager;
-	std::unique_ptr<SceneManager> _sceneManager;
+    std::shared_ptr<DeviceManager> _deviceManager;
+    std::unique_ptr<SwapchainManager> _swapchainManager;
+    std::shared_ptr<ResourceManager> _resourceManager;
+    std::unique_ptr<RenderPassManager> _renderPassManager;
+    std::unique_ptr<SceneManager> _sceneManager;
 
 	struct SDL_Window *_window{nullptr};
 
@@ -84,17 +66,18 @@ public:
 	VkExtent2D _drawExtent;
 	float renderScale = 1.f;
 
-	DescriptorAllocatorGrowable globalDescriptorAllocator;
-	ComputeManager compute;
+    std::unique_ptr<DescriptorManager> _descriptorManager;
+    std::unique_ptr<SamplerManager> _samplerManager;
+    ComputeManager compute;
+
+    std::shared_ptr<EngineContext> _context;
 
 	std::vector<VkFramebuffer> _framebuffers;
 
-	VkDescriptorSetLayout _singleImageDescriptorLayout;
+    DeletionQueue _mainDeletionQueue;
 
-	DeletionQueue _mainDeletionQueue;
-
-	VkPipelineLayout _meshPipelineLayout;
-	VkPipeline _meshPipeline;
+    VkPipelineLayout _meshPipelineLayout;
+    VkPipeline _meshPipeline;
 
 	GPUMeshBuffers rectangle;
 
@@ -106,16 +89,11 @@ public:
 	AllocatedImage _greyImage;
 	AllocatedImage _errorCheckerboardImage;
 
-	VkSampler _defaultSamplerLinear;
-	VkSampler _defaultSamplerNearest;
-
-	MaterialInstance defaultData;
+    MaterialInstance defaultData;
 
     GLTFMetallic_Roughness metalRoughMaterial;
 
-	VkDescriptorSetLayout _gpuSceneDataDescriptorLayout;
-
-	EngineStats stats;
+    EngineStats stats;
 
 	std::vector<RenderPass> renderPasses;
 
@@ -136,16 +114,10 @@ public:
 
 private:
     void init_frame_resources();
-    void init_commands();
+
     void init_pipelines();
 
-	void init_mesh_pipeline();
+    void init_mesh_pipeline();
 
-    void init_deferred_pipelines(); // TODO: move remaining pipeline setup into passes
-
-    void init_descriptors();
-
-	void init_default_samplers();
-
-	void init_default_data();
+    void init_default_data();
 };

@@ -2,12 +2,13 @@
 
 #include <utility>
 
-#include "core/vk_engine.h"
+#include "vk_swapchain.h"
+#include "core/engine_context.h"
 #include "glm/gtx/transform.hpp"
 
-void SceneManager::init(VulkanEngine *engine)
+void SceneManager::init(EngineContext *context)
 {
-    _engine = engine;
+    _context = context;
 
     mainCamera.velocity = glm::vec3(0.f);
     mainCamera.position = glm::vec3(30.f, -00.f, -085.f);
@@ -33,28 +34,28 @@ void SceneManager::update_scene()
         loadedScenes["structure"]->Draw(glm::mat4{1.f}, mainDrawContext);
     }
 
-    if (_engine->cubeMesh)
+    if (_context->cubeMesh)
     {
-        const GeoSurface &surf = _engine->cubeMesh->surfaces[0];
+        const GeoSurface &surf = _context->cubeMesh->surfaces[0];
         RenderObject obj{};
         obj.indexCount = surf.count;
         obj.firstIndex = surf.startIndex;
-        obj.indexBuffer = _engine->cubeMesh->meshBuffers.indexBuffer.buffer;
-        obj.vertexBufferAddress = _engine->cubeMesh->meshBuffers.vertexBufferAddress;
+        obj.indexBuffer = _context->cubeMesh->meshBuffers.indexBuffer.buffer;
+        obj.vertexBufferAddress = _context->cubeMesh->meshBuffers.vertexBufferAddress;
         obj.material = &surf.material->data;
         obj.bounds = surf.bounds;
         obj.transform = glm::translate(glm::mat4(1.f), glm::vec3(-2.f, 0.f, -2.f));
         mainDrawContext.OpaqueSurfaces.push_back(obj);
     }
 
-    if (_engine->sphereMesh)
+    if (_context->sphereMesh)
     {
-        const auto &[startIndex, count, bounds, material] = _engine->sphereMesh->surfaces[0];
+        const auto &[startIndex, count, bounds, material] = _context->sphereMesh->surfaces[0];
         RenderObject obj{};
         obj.indexCount = count;
         obj.firstIndex = startIndex;
-        obj.indexBuffer = _engine->sphereMesh->meshBuffers.indexBuffer.buffer;
-        obj.vertexBufferAddress = _engine->sphereMesh->meshBuffers.vertexBufferAddress;
+        obj.indexBuffer = _context->sphereMesh->meshBuffers.indexBuffer.buffer;
+        obj.vertexBufferAddress = _context->sphereMesh->meshBuffers.vertexBufferAddress;
         obj.material = &material->data;
         obj.bounds = bounds;
         obj.transform = glm::translate(glm::mat4(1.f), glm::vec3(2.f, 0.f, -2.f));
@@ -64,10 +65,8 @@ void SceneManager::update_scene()
     glm::mat4 view = mainCamera.getViewMatrix();
     glm::mat4 projection = glm::perspective(
         glm::radians(70.f),
-        (float) _engine->_swapchainManager->windowExtent().width / (float) _engine->_swapchainManager->windowExtent().
-        height,
-        10000.f, 0.1f
-    );
+        (float) _context->getSwapchain()->windowExtent().width / (float) _context->getSwapchain()->windowExtent().height,
+        10000.f, 0.1f);
     projection[1][1] *= -1;
 
     sceneData.view = view;

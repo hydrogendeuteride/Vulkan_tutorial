@@ -3,12 +3,15 @@
 #include "imgui.h"
 #include "imgui_impl_sdl2.h"
 #include "imgui_impl_vulkan.h"
+#include "vk_device.h"
+#include "vk_swapchain.h"
 #include "core/vk_images.h"
 #include "core/vk_initializers.h"
+#include "core/engine_context.h"
 
-void ImGuiPass::init(VulkanEngine *engine)
+void ImGuiPass::init(EngineContext *context)
 {
-    _engine = engine;
+    _context = context;
 
     VkDescriptorPoolSize pool_sizes[] = {
         {VK_DESCRIPTOR_TYPE_SAMPLER, 1000},
@@ -32,17 +35,17 @@ void ImGuiPass::init(VulkanEngine *engine)
     pool_info.pPoolSizes = pool_sizes;
 
     VkDescriptorPool imguiPool;
-    VK_CHECK(vkCreateDescriptorPool(_engine->_deviceManager->device(), &pool_info, nullptr, &imguiPool));
+    VK_CHECK(vkCreateDescriptorPool(_context->device->device(), &pool_info, nullptr, &imguiPool));
 
     ImGui::CreateContext();
 
-    ImGui_ImplSDL2_InitForVulkan(_engine->_window);
+    ImGui_ImplSDL2_InitForVulkan(_context->window);
 
     ImGui_ImplVulkan_InitInfo init_info = {};
-    init_info.Instance = _engine->_deviceManager->instance();
-    init_info.PhysicalDevice = _engine->_deviceManager->physicalDevice();
-    init_info.Device = _engine->_deviceManager->device();
-    init_info.Queue = _engine->_deviceManager->graphicsQueue();
+    init_info.Instance = _context->getDevice()->instance();
+    init_info.PhysicalDevice = _context->getDevice()->physicalDevice();
+    init_info.Device = _context->getDevice()->device();
+    init_info.Queue = _context->getDevice()->graphicsQueue();
     init_info.DescriptorPool = imguiPool;
     init_info.MinImageCount = 3;
     init_info.ImageCount = 3;
@@ -50,7 +53,7 @@ void ImGuiPass::init(VulkanEngine *engine)
 
     init_info.PipelineRenderingCreateInfo = {.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO};
     init_info.PipelineRenderingCreateInfo.colorAttachmentCount = 1;
-    auto _swapchainImageFormat = _engine->_swapchainManager->swapchainImageFormat();
+    auto _swapchainImageFormat = _context->getSwapchain()->swapchainImageFormat();
     init_info.PipelineRenderingCreateInfo.pColorAttachmentFormats = &_swapchainImageFormat;
 
     init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
@@ -62,7 +65,7 @@ void ImGuiPass::init(VulkanEngine *engine)
     // add the destroy the imgui created structures
     _deletionQueue.push_function([=]() {
         ImGui_ImplVulkan_Shutdown();
-        vkDestroyDescriptorPool(_engine->_deviceManager->device(), imguiPool, nullptr);
+        vkDestroyDescriptorPool(_context->getDevice()->device(), imguiPool, nullptr);
     });
 }
 
@@ -86,7 +89,7 @@ void ImGuiPass::draw_imgui(VkCommandBuffer cmd, VkImageView targetImageView) con
     VkRenderingAttachmentInfo colorAttachment = vkinit::attachment_info(
         targetImageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
     VkRenderingInfo renderInfo = vkinit::rendering_info(
-        _engine->_swapchainManager->swapchainExtent(), &colorAttachment, nullptr);
+        _context->getSwapchain()->swapchainExtent(), &colorAttachment, nullptr);
 
     vkCmdBeginRendering(cmd, &renderInfo);
     ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmd);

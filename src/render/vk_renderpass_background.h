@@ -2,12 +2,10 @@
 #include "vk_renderpass.h"
 #include "compute/vk_compute.h"
 
-struct ComputeEffect;
-
 class BackgroundPass : public IRenderPass
 {
 public:
-    void init(VulkanEngine *engine) override;
+    void init(EngineContext *context) override;
     void cleanup() override;
     void execute(VkCommandBuffer cmd) override;
     const char *getName() const override { return "Background"; }
@@ -19,7 +17,7 @@ public:
     int _currentEffect = 0;
 
 private:
-    VulkanEngine *_engine = nullptr;
+    EngineContext *_context = nullptr;
 
     void init_background_pipelines();
 };

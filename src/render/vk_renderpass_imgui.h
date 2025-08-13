@@ -1,10 +1,11 @@
 #pragma once
-#include "core/vk_engine.h"
+#include "vk_renderpass.h"
+#include "core/vk_types.h"
 
 class ImGuiPass : public IRenderPass
 {
 public:
-    void init(VulkanEngine *engine) override;
+    void init(EngineContext *context) override;
 
     void cleanup() override;
 
@@ -15,7 +16,7 @@ public:
     const char *getName() const override { return "ImGui"; }
 
 private:
-    VulkanEngine *_engine = nullptr;
+    EngineContext *_context = nullptr;
 
     void draw_imgui(VkCommandBuffer cmd, VkImageView targetImageView) const;
 

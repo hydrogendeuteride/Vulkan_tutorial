@@ -1,10 +1,18 @@
 #include "vk_renderpass_geometry.h"
-#include "core/vk_engine.h"
+
+#include <chrono>
+
+#include "frame_resources.h"
+#include "vk_descriptor_manager.h"
+#include "vk_device.h"
+#include "core/engine_context.h"
 #include "core/vk_images.h"
 #include "core/vk_initializers.h"
 #include "core/vk_resource.h"
 
 #include "vk_mem_alloc.h"
+#include "vk_scene.h"
+#include "vk_swapchain.h"
 
 bool is_visible(const RenderObject &obj, const glm::mat4 &viewproj)
 {
@@ -46,20 +54,20 @@ bool is_visible(const RenderObject &obj, const glm::mat4 &viewproj)
     return true;
 }
 
-void GeometryPass::init(VulkanEngine *engine)
+void GeometryPass::init(EngineContext *context)
 {
-    _engine = engine;
+    _context = context;
 }
 
 void GeometryPass::execute(VkCommandBuffer cmd)
 {
-    vkutil::transition_image(cmd, _engine->_swapchainManager->gBufferPosition().image, VK_IMAGE_LAYOUT_UNDEFINED,
+    vkutil::transition_image(cmd, _context->getSwapchain()->gBufferPosition().image, VK_IMAGE_LAYOUT_UNDEFINED,
                              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-    vkutil::transition_image(cmd, _engine->_swapchainManager->gBufferNormal().image, VK_IMAGE_LAYOUT_UNDEFINED,
+    vkutil::transition_image(cmd, _context->getSwapchain()->gBufferNormal().image, VK_IMAGE_LAYOUT_UNDEFINED,
                              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-    vkutil::transition_image(cmd, _engine->_swapchainManager->gBufferAlbedo().image, VK_IMAGE_LAYOUT_UNDEFINED,
+    vkutil::transition_image(cmd, _context->getSwapchain()->gBufferAlbedo().image, VK_IMAGE_LAYOUT_UNDEFINED,
                              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-    vkutil::transition_image(cmd, _engine->_swapchainManager->depthImage().image, VK_IMAGE_LAYOUT_UNDEFINED,
+    vkutil::transition_image(cmd, _context->getSwapchain()->depthImage().image, VK_IMAGE_LAYOUT_UNDEFINED,
                              VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 
     draw_geometry(cmd);
@@ -67,8 +75,8 @@ void GeometryPass::execute(VkCommandBuffer cmd)
 
 void GeometryPass::draw_geometry(VkCommandBuffer cmd) const
 {
-    auto& mainDrawContext = _engine->_sceneManager->getMainDrawContext();
-    auto& sceneData = _engine->_sceneManager->getSceneData();
+    const auto& mainDrawContext = _context->getMainDrawContext();
+    const auto& sceneData = _context->getSceneData();
 
     auto start = std::chrono::system_clock::now();
 
@@ -99,41 +107,41 @@ void GeometryPass::draw_geometry(VkCommandBuffer cmd) const
     VkRenderingAttachmentInfo gbufferAttachments[3];
     VkClearValue gbufferClear{};
     gbufferClear.color = {{0.f, 0.f, 0.f, 0.f}};
-    gbufferAttachments[0] = vkinit::attachment_info( _engine->_swapchainManager->gBufferPosition().imageView, &gbufferClear,
+    gbufferAttachments[0] = vkinit::attachment_info( _context->getSwapchain()->gBufferPosition().imageView, &gbufferClear,
                                                     VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-    gbufferAttachments[1] = vkinit::attachment_info( _engine->_swapchainManager->gBufferNormal().imageView, &gbufferClear,
+    gbufferAttachments[1] = vkinit::attachment_info( _context->getSwapchain()->gBufferNormal().imageView, &gbufferClear,
                                                     VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-    gbufferAttachments[2] = vkinit::attachment_info(_engine->_swapchainManager->gBufferAlbedo().imageView, &gbufferClear,
+    gbufferAttachments[2] = vkinit::attachment_info(_context->getSwapchain()->gBufferAlbedo().imageView, &gbufferClear,
                                                     VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
     VkRenderingAttachmentInfo depthAttachment = vkinit::depth_attachment_info(
-         _engine->_swapchainManager->depthImage().imageView, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+         _context->getSwapchain()->depthImage().imageView, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 
-    VkRenderingInfo renderInfo = vkinit::rendering_info_multi(_engine->_drawExtent, 3, gbufferAttachments, &depthAttachment);
+    VkRenderingInfo renderInfo = vkinit::rendering_info_multi(_context->drawExtent, 3, gbufferAttachments, &depthAttachment);
     vkCmdBeginRendering(cmd, &renderInfo);
 
     //allocate a new uniform buffer for the scene data
-    AllocatedBuffer gpuSceneDataBuffer = _engine->_resourceManager->create_buffer(sizeof(GPUSceneData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+    AllocatedBuffer gpuSceneDataBuffer = _context->resources->create_buffer(sizeof(GPUSceneData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                                                        VMA_MEMORY_USAGE_CPU_TO_GPU);
 
     //add it to the deletion queue of this frame so it gets deleted once its been used
-    _engine->get_current_frame()._deletionQueue.push_function([=, this]() {
-        _engine->_resourceManager->destroy_buffer(gpuSceneDataBuffer);
+    _context->currentFrame->_deletionQueue.push_function([=, this]() {
+        _context->resources->destroy_buffer(gpuSceneDataBuffer);
     });
 
     //write the buffer
     VmaAllocationInfo allocInfo{};
-    vmaGetAllocationInfo(_engine->_deviceManager->allocator(), gpuSceneDataBuffer.allocation, &allocInfo);
+    vmaGetAllocationInfo(_context->device->allocator(), gpuSceneDataBuffer.allocation, &allocInfo);
     auto *sceneUniformData = static_cast<GPUSceneData *>(allocInfo.pMappedData);
     *sceneUniformData = sceneData;
 
     //create a descriptor set that binds that buffer and update it
-    VkDescriptorSet globalDescriptor = _engine->get_current_frame()._frameDescriptors.allocate(
-        _engine->_deviceManager->device(), _engine->_gpuSceneDataDescriptorLayout);
+    VkDescriptorSet globalDescriptor = _context->currentFrame->_frameDescriptors.allocate(
+        _context->device->device(), _context->getDescriptorLayouts()->gpuSceneDataLayout());
 
     DescriptorWriter writer;
     writer.write_buffer(0, gpuSceneDataBuffer.buffer, sizeof(GPUSceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-    writer.update_set(_engine->_deviceManager->device(), globalDescriptor);
+    writer.update_set(_context->device->device(), globalDescriptor);
 
     MaterialPipeline *lastPipeline = nullptr;
     MaterialInstance *lastMaterial = nullptr;
@@ -153,8 +161,8 @@ void GeometryPass::draw_geometry(VkCommandBuffer cmd) const
                 VkViewport viewport = {};
                 viewport.x = 0;
                 viewport.y = 0;
-                viewport.width = static_cast<float>(_engine->_drawExtent.width);
-                viewport.height = static_cast<float>(_engine->_drawExtent.height);
+                viewport.width = static_cast<float>(_context->getDrawExtent().width);
+                viewport.height = static_cast<float>(_context->getDrawExtent().height);
                 viewport.minDepth = 0.f;
                 viewport.maxDepth = 1.f;
 
@@ -163,8 +171,8 @@ void GeometryPass::draw_geometry(VkCommandBuffer cmd) const
                 VkRect2D scissor = {};
                 scissor.offset.x = 0;
                 scissor.offset.y = 0;
-                scissor.extent.width = _engine->_drawExtent.width;
-                scissor.extent.height = _engine->_drawExtent.height;
+                scissor.extent.width = _context->getDrawExtent().width;
+                scissor.extent.height = _context->getDrawExtent().height;
 
                 vkCmdSetScissor(cmd, 0, 1, &scissor);
             }
@@ -186,12 +194,15 @@ void GeometryPass::draw_geometry(VkCommandBuffer cmd) const
 
         vkCmdDrawIndexed(cmd, r.indexCount, 1, r.firstIndex, 0, 0);
 
-        _engine->stats.drawcall_count++;
-        _engine->stats.triangle_count += r.indexCount / 3;
+        _context->stats->drawcall_count++;
+        _context->stats->triangle_count += r.indexCount / 3;
     };
 
-    _engine->stats.drawcall_count = 0;
-    _engine->stats.triangle_count = 0;
+    if (_context->stats)
+    {
+        _context->stats->drawcall_count = 0;
+        _context->stats->triangle_count = 0;
+    }
 
     for (auto &r: opaque_draws)
     {
@@ -208,7 +219,10 @@ void GeometryPass::draw_geometry(VkCommandBuffer cmd) const
     auto end = std::chrono::system_clock::now();
 
     auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-    _engine->stats.mesh_draw_time = elapsed.count() / 1000.f;
+    if (_context->stats)
+    {
+        _context->stats->mesh_draw_time = elapsed.count() / 1000.f;
+    }
 }
 
 void GeometryPass::cleanup()
