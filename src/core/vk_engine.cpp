@@ -27,6 +27,7 @@
 #include "render/vk_renderpass_lighting.h"
 #include "vk_resource.h"
 #include "engine_context.h"
+#include "core/vk_pipeline_manager.h"
 
 VulkanEngine *loadedEngine = nullptr;
 
@@ -64,8 +65,7 @@ void VulkanEngine::init()
     _context = std::make_shared<EngineContext>();
     _context->device = _deviceManager;
     _context->resources = _resourceManager;
-    _context->descriptors = std::make_shared<DescriptorAllocatorGrowable>();
-    {
+    _context->descriptors = std::make_shared<DescriptorAllocatorGrowable>(); {
         std::vector<DescriptorAllocatorGrowable::PoolSizeRatio> sizes = {
             {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1},
             {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1},
@@ -81,6 +81,11 @@ void VulkanEngine::init()
     _context->descriptorLayouts = _descriptorManager.get();
     _context->samplers = _samplerManager.get();
     _context->swapchain = _swapchainManager.get();
+
+    // Create graphics pipeline manager (after swapchain is ready)
+    _pipelineManager = std::make_unique<PipelineManager>();
+    _pipelineManager->init(_context.get());
+    _context->pipelines = _pipelineManager.get();
 
     _sceneManager = std::make_unique<SceneManager>();
     _sceneManager->init(_context.get());
@@ -265,6 +270,8 @@ void VulkanEngine::cleanup()
 
         _renderPassManager->cleanup();
 
+        _pipelineManager->cleanup();
+
         compute.cleanup();
 
         _swapchainManager->cleanup();
@@ -273,9 +280,8 @@ void VulkanEngine::cleanup()
 
         _samplerManager->cleanup();
         _descriptorManager->cleanup();
-        if (_context && _context->descriptors) {
-            _context->descriptors->destroy_pools(_deviceManager->device());
-        }
+
+        _context->descriptors->destroy_pools(_deviceManager->device());
 
         _deviceManager->cleanup();
 
@@ -328,6 +334,13 @@ void VulkanEngine::draw()
     // publish per-frame pointers and draw extent to context for passes
     _context->currentFrame = &get_current_frame();
     _context->drawExtent = _drawExtent;
+
+    // Optional: check for shader changes and hot-reload pipelines
+    if (_pipelineManager)
+    {
+        _pipelineManager->hotReloadChanged();
+    }
+
     _renderPassManager->executeAll(cmd);
 
     //transtion the draw image and the swapchain image into their correct transfer layouts

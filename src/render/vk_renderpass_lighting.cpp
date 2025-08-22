@@ -8,6 +8,7 @@
 #include "core/vk_initializers.h"
 #include "core/vk_resource.h"
 #include "render/vk_pipelines.h"
+#include "core/vk_pipeline_manager.h"
 #include "core/vk_descriptors.h"
 
 #include "vk_mem_alloc.h"
@@ -41,43 +42,35 @@ void LightingPass::init(EngineContext *context)
         writer.update_set(_context->getDevice()->device(), _gBufferInputDescriptorSet);
     }
 
-    // Build lighting pipeline
-    VkShaderModule fullscreenVert;
-    VkShaderModule lightingFrag;
-    bool fullscreenLoaded = vkutil::load_shader_module("../shaders/fullscreen.vert.spv", _context->getDevice()->device(),
-                                                       &fullscreenVert);
-    bool lightingLoaded = vkutil::load_shader_module("../shaders/deferred_lighting.frag.spv",
-                                                     _context->getDevice()->device(), &lightingFrag);
-    if (!fullscreenLoaded || !lightingLoaded)
-    {
-        fmt::println("Failed to load lighting shaders");
-        return;
-    }
+    // Build lighting pipeline through PipelineManager
+    VkDescriptorSetLayout layouts[] = {
+        _context->getDescriptorLayouts()->gpuSceneDataLayout(),
+        _gBufferInputDescriptorLayout
+    };
 
-    VkDescriptorSetLayout layouts[] = {_context->getDescriptorLayouts()->gpuSceneDataLayout(), _gBufferInputDescriptorLayout};
-    VkPipelineLayoutCreateInfo layoutInfo = vkinit::pipeline_layout_create_info();
-    layoutInfo.setLayoutCount = 2;
-    layoutInfo.pSetLayouts = layouts;
-    VK_CHECK(vkCreatePipelineLayout(_context->device->device(), &layoutInfo, nullptr, &_pipelineLayout));
+    GraphicsPipelineCreateInfo info{};
+    info.vertexShaderPath = "../shaders/fullscreen.vert.spv";
+    info.fragmentShaderPath = "../shaders/deferred_lighting.frag.spv";
+    info.setLayouts.assign(std::begin(layouts), std::end(layouts));
+    info.configure = [this](PipelineBuilder &b) {
+        b.set_input_topology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+        b.set_polygon_mode(VK_POLYGON_MODE_FILL);
+        b.set_cull_mode(VK_CULL_MODE_NONE, VK_FRONT_FACE_CLOCKWISE);
+        b.set_multisampling_none();
+        b.enable_blending_alphablend();
+        b.disable_depthtest();
+        b.set_color_attachment_format(_context->getSwapchain()->drawImage().imageFormat);
+    };
+    _context->pipelines->createGraphicsPipeline("deferred_lighting", info);
 
-    PipelineBuilder builder;
-    builder._pipelineLayout = _pipelineLayout;
-    builder.set_shaders(fullscreenVert, lightingFrag);
-    builder.set_input_topology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
-    builder.set_polygon_mode(VK_POLYGON_MODE_FILL);
-    builder.set_cull_mode(VK_CULL_MODE_NONE, VK_FRONT_FACE_CLOCKWISE);
-    builder.set_multisampling_none();
-    builder.enable_blending_alphablend();
-    builder.disable_depthtest();
-    builder.set_color_attachment_format(_context->getSwapchain()->drawImage().imageFormat);
-    _pipeline = builder.build_pipeline(_context->getDevice()->device());
-
-    vkDestroyShaderModule(_context->getDevice()->device(), fullscreenVert, nullptr);
-    vkDestroyShaderModule(_context->getDevice()->device(), lightingFrag, nullptr);
+    // fetch the handles so current frame uses latest versions
+    MaterialPipeline mp{};
+    _context->pipelines->getMaterialPipeline("deferred_lighting", mp);
+    _pipeline = mp.pipeline;
+    _pipelineLayout = mp.layout;
 
     _deletionQueue.push_function([&]() {
-        vkDestroyPipelineLayout(_context->getDevice()->device(), _pipelineLayout, nullptr);
-        vkDestroyPipeline(_context->device->device(), _pipeline, nullptr);
+        // Pipelines are owned by PipelineManager; only destroy our local descriptor set layout
         vkDestroyDescriptorSetLayout(_context->getDevice()->device(), _gBufferInputDescriptorLayout, nullptr);
     });
 }
@@ -102,6 +95,9 @@ void LightingPass::execute(VkCommandBuffer cmd)
 
 void LightingPass::draw_lighting(VkCommandBuffer cmd)
 {
+    // Re-fetch pipeline in case it was hot-reloaded
+    _context->pipelines->getGraphics("deferred_lighting", _pipeline, _pipelineLayout);
+
     VkRenderingAttachmentInfo colorAttachment = vkinit::attachment_info(
         _context->getSwapchain()->drawImage().imageView, nullptr,
         VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);

@@ -22,6 +22,8 @@ add_executable (engine
   core/vk_descriptor_manager.cpp
   core/vk_sampler_manager.h
   core/vk_sampler_manager.cpp
+  core/vk_pipeline_manager.h
+  core/vk_pipeline_manager.cpp
   core/frame_resources.h
   core/frame_resources.cpp
   core/config.h

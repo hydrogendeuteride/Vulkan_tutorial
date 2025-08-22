@@ -24,6 +24,7 @@ class MeshAsset;
 struct DrawContext;
 struct GPUSceneData;
 class ComputeManager;
+class PipelineManager;
 struct FrameResources;
 struct SDL_Window;
 
@@ -45,6 +46,7 @@ public:
     FrameResources* currentFrame = nullptr;      // set by engine each frame
     EngineStats* stats = nullptr;                // points to engine stats
     ComputeManager* compute = nullptr;           // compute subsystem
+    PipelineManager* pipelines = nullptr;        // graphics pipeline manager
     SDL_Window* window = nullptr;                // SDL window handle
 
     // Frequently used values

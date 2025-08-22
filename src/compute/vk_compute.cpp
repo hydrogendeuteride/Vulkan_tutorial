@@ -133,6 +133,22 @@ void ComputeManager::init(EngineContext *context)
 void ComputeManager::cleanup()
 {
     pipelines.clear();
+    // Destroy instances and their owned resources
+    if (context)
+    {
+        for (auto &kv : instances)
+        {
+            for (auto &img : kv.second.ownedImages)
+            {
+                context->getResources()->destroy_image(img);
+            }
+            for (auto &buf : kv.second.ownedBuffers)
+            {
+                context->getResources()->destroy_buffer(buf);
+            }
+        }
+        instances.clear();
+    }
 
     if (context)
     {
@@ -202,6 +218,153 @@ void ComputeManager::dispatchImmediate(const std::string &pipelineName, const Co
     context->getResources()->immediate_submit([this, pipelineName, dispatchInfo](VkCommandBuffer cmd) {
         dispatch(cmd, pipelineName, dispatchInfo);
     });
+}
+
+bool ComputeManager::createInstance(const std::string &instanceName, const std::string &pipelineName)
+{
+    if (instances.find(instanceName) != instances.end())
+    {
+        std::cerr << "Compute instance '" << instanceName << "' already exists!" << std::endl;
+        return false;
+    }
+    auto it = pipelines.find(pipelineName);
+    if (it == pipelines.end())
+    {
+        std::cerr << "Pipeline '" << pipelineName << "' not found for instance!" << std::endl;
+        return false;
+    }
+
+    ComputeInstance inst{};
+    inst.pipelineName = pipelineName;
+
+    inst.descriptorSet = descriptorAllocator.allocate(context->getDevice()->device(), it->second.descriptorLayout);
+
+    instances.emplace(instanceName, std::move(inst));
+    return true;
+}
+
+void ComputeManager::destroyInstance(const std::string &instanceName)
+{
+    auto it = instances.find(instanceName);
+    if (it == instances.end()) return;
+
+    for (auto &img : it->second.ownedImages)
+        context->getResources()->destroy_image(img);
+    for (auto &buf : it->second.ownedBuffers)
+        context->getResources()->destroy_buffer(buf);
+
+    instances.erase(it);
+}
+
+static void upsert_binding(std::vector<ComputeBinding> &bindings, const ComputeBinding &b)
+{
+    for (auto &x : bindings)
+    {
+        if (x.binding == b.binding)
+        {
+            x = b;
+            return;
+        }
+    }
+    bindings.push_back(b);
+}
+
+bool ComputeManager::setInstanceBinding(const std::string &instanceName, const ComputeBinding &binding)
+{
+    auto it = instances.find(instanceName);
+    if (it == instances.end()) return false;
+    upsert_binding(it->second.bindings, binding);
+    return true;
+}
+
+bool ComputeManager::setInstanceStorageImage(const std::string &instanceName, uint32_t binding, VkImageView view,
+                                             VkImageLayout layout)
+{
+    return setInstanceBinding(instanceName, ComputeBinding::storeImage(binding, view, layout));
+}
+
+bool ComputeManager::setInstanceSampledImage(const std::string &instanceName, uint32_t binding, VkImageView view,
+                                             VkSampler sampler, VkImageLayout layout)
+{
+    return setInstanceBinding(instanceName, ComputeBinding::sampledImage(binding, view, sampler, layout));
+}
+
+bool ComputeManager::setInstanceBuffer(const std::string &instanceName, uint32_t binding, VkBuffer buffer,
+                                       VkDeviceSize size, VkDescriptorType type, VkDeviceSize offset)
+{
+    ComputeBinding b{};
+    b.binding = binding;
+    b.type = type;
+    b.buffer.buffer = buffer;
+    b.buffer.size = size;
+    b.buffer.offset = offset;
+    return setInstanceBinding(instanceName, b);
+}
+
+AllocatedImage ComputeManager::createAndBindStorageImage(const std::string &instanceName, uint32_t binding,
+                                                        VkExtent3D extent, VkFormat format, VkImageLayout layout,
+                                                        VkImageUsageFlags usage)
+{
+    auto it = instances.find(instanceName);
+    if (it == instances.end()) return {};
+
+    AllocatedImage img = context->getResources()->create_image(extent, format, usage);
+    it->second.ownedImages.push_back(img);
+    setInstanceStorageImage(instanceName, binding, img.imageView, layout);
+    return img;
+}
+
+AllocatedBuffer ComputeManager::createAndBindStorageBuffer(const std::string &instanceName, uint32_t binding,
+                                                          VkDeviceSize size, VkBufferUsageFlags usage,
+                                                          VmaMemoryUsage memUsage)
+{
+    auto it = instances.find(instanceName);
+    if (it == instances.end()) return {};
+    AllocatedBuffer buf = context->getResources()->create_buffer(size, usage, memUsage);
+    it->second.ownedBuffers.push_back(buf);
+    setInstanceBuffer(instanceName, binding, buf.buffer, size, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 0);
+    return buf;
+}
+
+bool ComputeManager::updateInstanceDescriptorSet(const std::string &instanceName)
+{
+    auto it = instances.find(instanceName);
+    if (it == instances.end()) return false;
+    updateDescriptorSet(it->second.descriptorSet, it->second.bindings);
+    return true;
+}
+
+void ComputeManager::dispatchInstance(VkCommandBuffer cmd, const std::string &instanceName,
+                                      const ComputeDispatchInfo &dispatchInfo)
+{
+    auto it = instances.find(instanceName);
+    if (it == instances.end())
+    {
+        std::cerr << "Compute instance '" << instanceName << "' not found!" << std::endl;
+        return;
+    }
+    auto pit = pipelines.find(it->second.pipelineName);
+    if (pit == pipelines.end())
+    {
+        std::cerr << "Pipeline '" << it->second.pipelineName << "' not found for instance dispatch!" << std::endl;
+        return;
+    }
+
+    const ComputePipeline &pipeline = pit->second;
+
+    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.getPipeline());
+
+    updateDescriptorSet(it->second.descriptorSet, it->second.bindings);
+    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.getLayout(), 0, 1, &it->second.descriptorSet,
+                            0, nullptr);
+
+    if (dispatchInfo.pushConstants && dispatchInfo.pushConstantSize > 0)
+    {
+        vkCmdPushConstants(cmd, pipeline.getLayout(), VK_SHADER_STAGE_COMPUTE_BIT, 0, dispatchInfo.pushConstantSize,
+                           dispatchInfo.pushConstants);
+    }
+    insertBarriers(cmd, dispatchInfo);
+    vkCmdDispatch(cmd, dispatchInfo.groupCountX, dispatchInfo.groupCountY, dispatchInfo.groupCountZ);
 }
 
 uint32_t ComputeManager::calculateGroupCount(uint32_t workItems, uint32_t localSize)

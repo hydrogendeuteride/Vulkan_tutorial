@@ -3,23 +3,12 @@
 #include "core/vk_engine.h"
 #include "render/vk_pipelines.h"
 #include "core/vk_initializers.h"
+#include "core/vk_pipeline_manager.h"
 
 namespace vkutil { bool load_shader_module(const char*, VkDevice, VkShaderModule*); }
 
 void GLTFMetallic_Roughness::build_pipelines(VulkanEngine *engine)
 {
-    VkShaderModule meshFragShader;
-    if (!vkutil::load_shader_module("../shaders/mesh.frag.spv", engine->_deviceManager->device(), &meshFragShader))
-    {
-        fmt::println("Error when building the triangle fragment shader module");
-    }
-
-    VkShaderModule meshVertexShader;
-    if (!vkutil::load_shader_module("../shaders/mesh.vert.spv", engine->_deviceManager->device(), &meshVertexShader))
-    {
-        fmt::println("Error when building the triangle vertex shader module");
-    }
-
     VkPushConstantRange matrixRange{};
     matrixRange.offset = 0;
     matrixRange.size = sizeof(GPUDrawPushConstants);
@@ -38,80 +27,67 @@ void GLTFMetallic_Roughness::build_pipelines(VulkanEngine *engine)
         materialLayout
     };
 
-    VkPipelineLayoutCreateInfo mesh_layout_info = vkinit::pipeline_layout_create_info();
-    mesh_layout_info.setLayoutCount = 2;
-    mesh_layout_info.pSetLayouts = layouts;
-    mesh_layout_info.pPushConstantRanges = &matrixRange;
-    mesh_layout_info.pushConstantRangeCount = 1;
-
-    VkPipelineLayout newLayout;
-    VK_CHECK(vkCreatePipelineLayout(engine->_deviceManager->device(), &mesh_layout_info, nullptr, &newLayout));
-
-    opaquePipeline.layout = newLayout;
-    transparentPipeline.layout = newLayout;
-
-    PipelineBuilder pipelineBuilder;
-    pipelineBuilder.set_shaders(meshVertexShader, meshFragShader);
-    pipelineBuilder.set_input_topology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
-    pipelineBuilder.set_polygon_mode(VK_POLYGON_MODE_FILL);
-    pipelineBuilder.set_cull_mode(VK_CULL_MODE_NONE, VK_FRONT_FACE_CLOCKWISE);
-    pipelineBuilder.set_multisampling_none();
-    pipelineBuilder.disable_blending();
-    pipelineBuilder.enable_depthtest(true, VK_COMPARE_OP_GREATER_OR_EQUAL);
-
-    pipelineBuilder.set_color_attachment_format(engine->_swapchainManager->drawImage().imageFormat);
-    pipelineBuilder.set_depth_format(engine->_swapchainManager->depthImage().imageFormat);
-    pipelineBuilder._pipelineLayout = newLayout;
-
-    opaquePipeline.pipeline = pipelineBuilder.build_pipeline(engine->_deviceManager->device());
-
-    pipelineBuilder.enable_blending_additive();
-    pipelineBuilder.enable_depthtest(false, VK_COMPARE_OP_GREATER_OR_EQUAL);
-    transparentPipeline.pipeline = pipelineBuilder.build_pipeline(engine->_deviceManager->device());
-
-    VkShaderModule gbufferFragShader;
-    bool gbufferLoaded = vkutil::load_shader_module("../shaders/gbuffer.frag.spv", engine->_deviceManager->device(),
-                                                    &gbufferFragShader);
-    if (!gbufferLoaded)
-    {
-        fmt::println("Failed to load gbuffer fragment shader");
-        vkDestroyShaderModule(engine->_deviceManager->device(), meshFragShader, nullptr);
-        vkDestroyShaderModule(engine->_deviceManager->device(), meshVertexShader, nullptr);
-        return;
-    }
-
-    PipelineBuilder gbufferBuilder;
-    gbufferBuilder.set_shaders(meshVertexShader, gbufferFragShader);
-    gbufferBuilder.set_input_topology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
-    gbufferBuilder.set_polygon_mode(VK_POLYGON_MODE_FILL);
-    gbufferBuilder.set_cull_mode(VK_CULL_MODE_NONE, VK_FRONT_FACE_CLOCKWISE);
-    gbufferBuilder.set_multisampling_none();
-    gbufferBuilder.disable_blending();
-    gbufferBuilder.enable_depthtest(true, VK_COMPARE_OP_GREATER_OR_EQUAL);
-    VkFormat gFormats[] = {
-        engine->_swapchainManager->gBufferPosition().imageFormat,
-        engine->_swapchainManager->gBufferNormal().imageFormat,
-        engine->_swapchainManager->gBufferAlbedo().imageFormat
+    // Register pipelines with the central PipelineManager
+    GraphicsPipelineCreateInfo opaqueInfo{};
+    opaqueInfo.vertexShaderPath = "../shaders/mesh.vert.spv";
+    opaqueInfo.fragmentShaderPath = "../shaders/mesh.frag.spv";
+    opaqueInfo.setLayouts.assign(std::begin(layouts), std::end(layouts));
+    opaqueInfo.pushConstants = {matrixRange};
+    opaqueInfo.configure = [engine](PipelineBuilder &b) {
+        b.set_input_topology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+        b.set_polygon_mode(VK_POLYGON_MODE_FILL);
+        b.set_cull_mode(VK_CULL_MODE_NONE, VK_FRONT_FACE_CLOCKWISE);
+        b.set_multisampling_none();
+        b.disable_blending();
+        b.enable_depthtest(true, VK_COMPARE_OP_GREATER_OR_EQUAL);
+        b.set_color_attachment_format(engine->_swapchainManager->drawImage().imageFormat);
+        b.set_depth_format(engine->_swapchainManager->depthImage().imageFormat);
     };
-    gbufferBuilder.set_color_attachment_formats(std::span<VkFormat>(gFormats, 3));
-    gbufferBuilder.set_depth_format(engine->_swapchainManager->depthImage().imageFormat);
-    gbufferBuilder._pipelineLayout = newLayout;
-    gBufferPipeline.pipeline = gbufferBuilder.build_pipeline(engine->_deviceManager->device());
-    gBufferPipeline.layout = newLayout;
+    engine->_pipelineManager->registerGraphics("mesh.opaque", opaqueInfo);
 
-    vkDestroyShaderModule(engine->_deviceManager->device(), gbufferFragShader, nullptr);
-    vkDestroyShaderModule(engine->_deviceManager->device(), meshFragShader, nullptr);
-    vkDestroyShaderModule(engine->_deviceManager->device(), meshVertexShader, nullptr);
+    GraphicsPipelineCreateInfo transparentInfo = opaqueInfo;
+    transparentInfo.configure = [engine](PipelineBuilder &b) {
+        b.set_input_topology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+        b.set_polygon_mode(VK_POLYGON_MODE_FILL);
+        b.set_cull_mode(VK_CULL_MODE_NONE, VK_FRONT_FACE_CLOCKWISE);
+        b.set_multisampling_none();
+        b.enable_blending_additive();
+        b.enable_depthtest(false, VK_COMPARE_OP_GREATER_OR_EQUAL);
+        b.set_color_attachment_format(engine->_swapchainManager->drawImage().imageFormat);
+        b.set_depth_format(engine->_swapchainManager->depthImage().imageFormat);
+    };
+    engine->_pipelineManager->registerGraphics("mesh.transparent", transparentInfo);
+
+    GraphicsPipelineCreateInfo gbufferInfo{};
+    gbufferInfo.vertexShaderPath = "../shaders/mesh.vert.spv";
+    gbufferInfo.fragmentShaderPath = "../shaders/gbuffer.frag.spv";
+    gbufferInfo.setLayouts.assign(std::begin(layouts), std::end(layouts));
+    gbufferInfo.pushConstants = {matrixRange};
+    gbufferInfo.configure = [engine](PipelineBuilder &b) {
+        b.set_input_topology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+        b.set_polygon_mode(VK_POLYGON_MODE_FILL);
+        b.set_cull_mode(VK_CULL_MODE_NONE, VK_FRONT_FACE_CLOCKWISE);
+        b.set_multisampling_none();
+        b.disable_blending();
+        b.enable_depthtest(true, VK_COMPARE_OP_GREATER_OR_EQUAL);
+        VkFormat gFormats[] = {
+            engine->_swapchainManager->gBufferPosition().imageFormat,
+            engine->_swapchainManager->gBufferNormal().imageFormat,
+            engine->_swapchainManager->gBufferAlbedo().imageFormat
+        };
+        b.set_color_attachment_formats(std::span<VkFormat>(gFormats, 3));
+        b.set_depth_format(engine->_swapchainManager->depthImage().imageFormat);
+    };
+    engine->_pipelineManager->registerGraphics("mesh.gbuffer", gbufferInfo);
+
+    engine->_pipelineManager->getMaterialPipeline("mesh.opaque", opaquePipeline);
+    engine->_pipelineManager->getMaterialPipeline("mesh.transparent", transparentPipeline);
+    engine->_pipelineManager->getMaterialPipeline("mesh.gbuffer", gBufferPipeline);
 }
 
 void GLTFMetallic_Roughness::clear_resources(VkDevice device) const
 {
     vkDestroyDescriptorSetLayout(device, materialLayout, nullptr);
-    vkDestroyPipelineLayout(device, transparentPipeline.layout, nullptr);
-
-    vkDestroyPipeline(device, transparentPipeline.pipeline, nullptr);
-    vkDestroyPipeline(device, opaquePipeline.pipeline, nullptr);
-    vkDestroyPipeline(device, gBufferPipeline.pipeline, nullptr);
 }
 
 MaterialInstance GLTFMetallic_Roughness::write_material(VkDevice device, MaterialPass pass,

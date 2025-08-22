@@ -29,8 +29,8 @@ bool is_visible(const RenderObject &obj, const glm::mat4 &viewproj)
 
     glm::mat4 matrix = viewproj * obj.transform;
 
-    glm::vec3 min = {1.5, 1.5, 1.5};
-    glm::vec3 max = {-1.5, -1.5, -1.5};
+    glm::vec3 min = {2., 2., 2.};
+    glm::vec3 max = {-2., -2., -2.};
 
     for (int c = 0; c < 8; c++)
     {

@@ -1,9 +1,11 @@
 #include "vk_renderpass_background.h"
+#include <string_view>
 
 #include "vk_swapchain.h"
 #include "core/engine_context.h"
 #include "core/vk_images.h"
 #include "core/vk_resource.h"
+#include "core/vk_pipeline_manager.h"
 
 void BackgroundPass::init(EngineContext *context)
 {
@@ -17,10 +19,17 @@ void BackgroundPass::init_background_pipelines()
     createInfo.shaderPath = "../shaders/gradient_color.comp.spv";
     createInfo.descriptorTypes = {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE};
     createInfo.pushConstantSize = sizeof(ComputePushConstants);
-    _context->compute->registerPipeline("gradient", createInfo);
+    _context->pipelines->createComputePipeline("gradient", createInfo);
 
     createInfo.shaderPath = "../shaders/sky.comp.spv";
-    _context->compute->registerPipeline("sky", createInfo);
+    _context->pipelines->createComputePipeline("sky", createInfo);
+
+    _context->pipelines->createComputeInstance("background.gradient", "gradient");
+    _context->pipelines->createComputeInstance("background.sky", "sky");
+    _context->pipelines->setComputeInstanceStorageImage("background.gradient", 0,
+                                                        _context->getSwapchain()->drawImage().imageView);
+    _context->pipelines->setComputeInstanceStorageImage("background.sky", 0,
+                                                        _context->getSwapchain()->drawImage().imageView);
 
     ComputeEffect gradient{};
     gradient.name = "gradient";
@@ -42,23 +51,32 @@ void BackgroundPass::execute(VkCommandBuffer cmd)
     vkutil::transition_image(cmd, _context->getSwapchain()->depthImage().image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                              VK_IMAGE_LAYOUT_GENERAL);
 
+    _context->pipelines->setComputeInstanceStorageImage("background.gradient", 0,
+                                                        _context->getSwapchain()->drawImage().imageView);
+    _context->pipelines->setComputeInstanceStorageImage("background.sky", 0,
+                                                        _context->getSwapchain()->drawImage().imageView);
+
     ComputeEffect &effect = _backgroundEffects[_currentEffect];
 
     ComputeDispatchInfo dispatchInfo = ComputeManager::createDispatch2D(
         _context->drawExtent.width, _context->drawExtent.height);
-    dispatchInfo.bindings.push_back(ComputeBinding::storeImage(0, _context->getSwapchain()->drawImage().imageView));
     dispatchInfo.pushConstants = &effect.data;
     dispatchInfo.pushConstantSize = sizeof(ComputePushConstants);
 
-    _context->compute->dispatch(cmd, effect.name, dispatchInfo);
+    const char *instanceName = (std::string_view(effect.name) == std::string_view("gradient"))
+                               ? "background.gradient"
+                               : "background.sky";
+    _context->pipelines->dispatchComputeInstance(cmd, instanceName, dispatchInfo);
 }
 
 void BackgroundPass::cleanup()
 {
-    if (_context && _context->compute)
+    if (_context && _context->pipelines)
     {
-        _context->compute->unregisterPipeline("gradient");
-        _context->compute->unregisterPipeline("sky");
+        _context->pipelines->destroyComputeInstance("background.gradient");
+        _context->pipelines->destroyComputeInstance("background.sky");
+        _context->pipelines->destroyComputePipeline("gradient");
+        _context->pipelines->destroyComputePipeline("sky");
     }
     fmt::print("RenderPassManager::cleanup()\n");
     _backgroundEffects.clear();

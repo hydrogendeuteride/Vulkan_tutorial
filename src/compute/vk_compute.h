@@ -132,6 +132,10 @@ public:
     void cleanup();
 
     bool registerPipeline(const std::string &name, const ComputePipelineCreateInfo &createInfo);
+
+    bool createComputePipeline(const std::string &name, const ComputePipelineCreateInfo &createInfo) {
+        return registerPipeline(name, createInfo);
+    }
     void unregisterPipeline(const std::string &name);
     bool hasPipeline(const std::string &name) const;
 
@@ -150,10 +154,45 @@ public:
     void copyBuffer(VkCommandBuffer cmd, VkBuffer src, VkBuffer dst, VkDeviceSize size, VkDeviceSize srcOffset = 0,
                     VkDeviceSize dstOffset = 0);
 
+    struct ComputeInstance
+    {
+        std::string pipelineName;
+        VkDescriptorSet descriptorSet = VK_NULL_HANDLE;
+        std::vector<ComputeBinding> bindings;
+        std::vector<AllocatedImage> ownedImages;
+        std::vector<AllocatedBuffer> ownedBuffers;
+    };
+
+    bool createInstance(const std::string &instanceName, const std::string &pipelineName);
+    void destroyInstance(const std::string &instanceName);
+    bool hasInstance(const std::string &instanceName) const { return instances.find(instanceName) != instances.end(); }
+
+    bool setInstanceBinding(const std::string &instanceName, const ComputeBinding &binding);
+
+    bool setInstanceStorageImage(const std::string &instanceName, uint32_t binding, VkImageView view,
+                                 VkImageLayout layout = VK_IMAGE_LAYOUT_GENERAL);
+    bool setInstanceSampledImage(const std::string &instanceName, uint32_t binding, VkImageView view, VkSampler sampler,
+                                 VkImageLayout layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    bool setInstanceBuffer(const std::string &instanceName, uint32_t binding, VkBuffer buffer, VkDeviceSize size,
+                           VkDescriptorType type, VkDeviceSize offset = 0);
+
+    AllocatedImage createAndBindStorageImage(const std::string &instanceName, uint32_t binding, VkExtent3D extent,
+                                             VkFormat format,
+                                             VkImageLayout layout = VK_IMAGE_LAYOUT_GENERAL,
+                                             VkImageUsageFlags usage = VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
+    AllocatedBuffer createAndBindStorageBuffer(const std::string &instanceName, uint32_t binding, VkDeviceSize size,
+                                               VkBufferUsageFlags usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+                                               VmaMemoryUsage memUsage = VMA_MEMORY_USAGE_GPU_ONLY);
+
+    bool updateInstanceDescriptorSet(const std::string &instanceName);
+    void dispatchInstance(VkCommandBuffer cmd, const std::string &instanceName, const ComputeDispatchInfo &dispatchInfo);
+
 private:
     EngineContext *context = nullptr;
     std::unordered_map<std::string, ComputePipeline> pipelines;
     DescriptorAllocatorGrowable descriptorAllocator;
+
+    std::unordered_map<std::string, ComputeInstance> instances;
 
     bool createPipeline(const std::string &name, const ComputePipelineCreateInfo &createInfo);
     VkDescriptorSet allocateDescriptorSet(const ComputePipeline &pipeline, const std::vector<ComputeBinding> &bindings);
