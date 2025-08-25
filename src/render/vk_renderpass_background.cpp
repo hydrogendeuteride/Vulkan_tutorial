@@ -6,6 +6,7 @@
 #include "core/vk_images.h"
 #include "core/vk_resource.h"
 #include "core/vk_pipeline_manager.h"
+#include "core/asset_manager.h"
 
 void BackgroundPass::init(EngineContext *context)
 {
@@ -16,12 +17,12 @@ void BackgroundPass::init(EngineContext *context)
 void BackgroundPass::init_background_pipelines()
 {
     ComputePipelineCreateInfo createInfo{};
-    createInfo.shaderPath = "../shaders/gradient_color.comp.spv";
+    createInfo.shaderPath = _context->getAssets()->shaderPath("gradient_color.comp.spv");
     createInfo.descriptorTypes = {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE};
     createInfo.pushConstantSize = sizeof(ComputePushConstants);
     _context->pipelines->createComputePipeline("gradient", createInfo);
 
-    createInfo.shaderPath = "../shaders/sky.comp.spv";
+    createInfo.shaderPath = _context->getAssets()->shaderPath("sky.comp.spv");
     _context->pipelines->createComputePipeline("sky", createInfo);
 
     _context->pipelines->createComputeInstance("background.gradient", "gradient");

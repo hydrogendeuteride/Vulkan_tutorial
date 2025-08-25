@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <glm/glm.hpp>
+#include <glm/gtc/constants.hpp>
 #include "core/vk_types.h"
 
 namespace primitives {
@@ -46,7 +47,7 @@ inline void buildSphere(std::vector<Vertex>& vertices, std::vector<uint32_t>& in
     float radius = 0.5f;
     for (int i = 0; i <= stacks; ++i) {
         float v = (float)i / stacks;
-        float phi = v * glm::pi<float>();
+        const float phi = v * glm::pi<float>();
         float y = cos(phi);
         float r = sin(phi);
         for (int j = 0; j <= sectors; ++j) {

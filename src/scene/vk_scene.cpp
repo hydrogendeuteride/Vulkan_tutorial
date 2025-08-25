@@ -34,32 +34,42 @@ void SceneManager::update_scene()
         loadedScenes["structure"]->Draw(glm::mat4{1.f}, mainDrawContext);
     }
 
-    if (_context->cubeMesh)
+    // dynamic GLTF instances
+    for (const auto &kv: dynamicGLTFInstances)
     {
-        const GeoSurface &surf = _context->cubeMesh->surfaces[0];
-        RenderObject obj{};
-        obj.indexCount = surf.count;
-        obj.firstIndex = surf.startIndex;
-        obj.indexBuffer = _context->cubeMesh->meshBuffers.indexBuffer.buffer;
-        obj.vertexBufferAddress = _context->cubeMesh->meshBuffers.vertexBufferAddress;
-        obj.material = &surf.material->data;
-        obj.bounds = surf.bounds;
-        obj.transform = glm::translate(glm::mat4(1.f), glm::vec3(-2.f, 0.f, -2.f));
-        mainDrawContext.OpaqueSurfaces.push_back(obj);
+        const GLTFInstance &inst = kv.second;
+        if (inst.scene)
+        {
+            inst.scene->Draw(inst.transform, mainDrawContext);
+        }
     }
 
-    if (_context->sphereMesh)
+    // Default primitives are added as dynamic instances by the engine.
+
+    // dynamic mesh instances
+    for (const auto &kv: dynamicMeshInstances)
     {
-        const auto &[startIndex, count, bounds, material] = _context->sphereMesh->surfaces[0];
-        RenderObject obj{};
-        obj.indexCount = count;
-        obj.firstIndex = startIndex;
-        obj.indexBuffer = _context->sphereMesh->meshBuffers.indexBuffer.buffer;
-        obj.vertexBufferAddress = _context->sphereMesh->meshBuffers.vertexBufferAddress;
-        obj.material = &material->data;
-        obj.bounds = bounds;
-        obj.transform = glm::translate(glm::mat4(1.f), glm::vec3(2.f, 0.f, -2.f));
-        mainDrawContext.OpaqueSurfaces.push_back(obj);
+        const MeshInstance &inst = kv.second;
+        if (!inst.mesh || inst.mesh->surfaces.empty()) continue;
+        for (const auto &surf: inst.mesh->surfaces)
+        {
+            RenderObject obj{};
+            obj.indexCount = surf.count;
+            obj.firstIndex = surf.startIndex;
+            obj.indexBuffer = inst.mesh->meshBuffers.indexBuffer.buffer;
+            obj.vertexBufferAddress = inst.mesh->meshBuffers.vertexBufferAddress;
+            obj.material = &surf.material->data;
+            obj.bounds = surf.bounds;
+            obj.transform = inst.transform;
+            if (obj.material->passType == MaterialPass::Transparent)
+            {
+                mainDrawContext.TransparentSurfaces.push_back(obj);
+            }
+            else
+            {
+                mainDrawContext.OpaqueSurfaces.push_back(obj);
+            }
+        }
     }
 
     glm::mat4 view = mainCamera.getViewMatrix();
@@ -93,4 +103,37 @@ void SceneManager::cleanup()
 {
     loadedScenes.clear();
     loadedNodes.clear();
+}
+
+void SceneManager::addMeshInstance(const std::string &name, std::shared_ptr<MeshAsset> mesh, const glm::mat4 &transform)
+{
+    if (!mesh) return;
+    dynamicMeshInstances[name] = MeshInstance{std::move(mesh), transform};
+}
+
+bool SceneManager::removeMeshInstance(const std::string &name)
+{
+    return dynamicMeshInstances.erase(name) > 0;
+}
+
+void SceneManager::clearMeshInstances()
+{
+    dynamicMeshInstances.clear();
+}
+
+void SceneManager::addGLTFInstance(const std::string &name, std::shared_ptr<LoadedGLTF> scene,
+                                   const glm::mat4 &transform)
+{
+    if (!scene) return;
+    dynamicGLTFInstances[name] = GLTFInstance{std::move(scene), transform};
+}
+
+bool SceneManager::removeGLTFInstance(const std::string &name)
+{
+    return dynamicGLTFInstances.erase(name) > 0;
+}
+
+void SceneManager::clearGLTFInstances()
+{
+    dynamicGLTFInstances.clear();
 }

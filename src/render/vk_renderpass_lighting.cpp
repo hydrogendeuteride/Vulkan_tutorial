@@ -9,6 +9,7 @@
 #include "core/vk_resource.h"
 #include "render/vk_pipelines.h"
 #include "core/vk_pipeline_manager.h"
+#include "core/asset_manager.h"
 #include "core/vk_descriptors.h"
 
 #include "vk_mem_alloc.h"
@@ -49,8 +50,8 @@ void LightingPass::init(EngineContext *context)
     };
 
     GraphicsPipelineCreateInfo info{};
-    info.vertexShaderPath = "../shaders/fullscreen.vert.spv";
-    info.fragmentShaderPath = "../shaders/deferred_lighting.frag.spv";
+    info.vertexShaderPath = _context->getAssets()->shaderPath("fullscreen.vert.spv");
+    info.fragmentShaderPath = _context->getAssets()->shaderPath("deferred_lighting.frag.spv");
     info.setLayouts.assign(std::begin(layouts), std::end(layouts));
     info.configure = [this](PipelineBuilder &b) {
         b.set_input_topology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);

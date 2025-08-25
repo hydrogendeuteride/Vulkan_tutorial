@@ -87,6 +87,11 @@ void VulkanEngine::init()
     _pipelineManager->init(_context.get());
     _context->pipelines = _pipelineManager.get();
 
+    // Create central AssetManager for paths and asset caching
+    _assetManager = std::make_unique<AssetManager>();
+    _assetManager->init(this);
+    _context->assets = _assetManager.get();
+
     _sceneManager = std::make_unique<SceneManager>();
     _sceneManager->init(_context.get());
     _context->scene = _sceneManager.get();
@@ -99,7 +104,8 @@ void VulkanEngine::init()
 
     init_frame_resources();
 
-    init_pipelines();
+    // Build material pipelines early so materials can be created
+    metalRoughMaterial.build_pipelines(this);
 
     init_default_data();
 
@@ -109,8 +115,8 @@ void VulkanEngine::init()
     auto imguiPass = std::make_unique<ImGuiPass>();
     _renderPassManager->setImGuiPass(std::move(imguiPass));
 
-    const std::string structurePath = {"../assets/structure.glb"};
-    const auto structureFile = loadGltf(this, structurePath);
+    const std::string structurePath = _assetManager->modelPath("structure.glb");
+    const auto structureFile = _assetManager->loadGLTF(structurePath);
 
     assert(structureFile.has_value());
 
@@ -150,89 +156,18 @@ void VulkanEngine::init_default_data()
                                                              VK_FORMAT_R8G8B8A8_UNORM,
                                                              VK_IMAGE_USAGE_SAMPLED_BIT);
 
-    //create a simple white material that we can use for generated meshes
-    GLTFMetallic_Roughness::MaterialResources matResources{};
-    matResources.colorImage = _whiteImage;
-    matResources.colorSampler = _samplerManager->defaultLinear();
-    matResources.metalRoughImage = _whiteImage;
-    matResources.metalRoughSampler = _samplerManager->defaultLinear();
+    // build default primitive meshes via AssetManager
+    cubeMesh = _assetManager->createCube("Cube");
+    sphereMesh = _assetManager->createSphere("Sphere");
 
-    AllocatedBuffer matBuffer = _resourceManager->create_buffer(sizeof(GLTFMetallic_Roughness::MaterialConstants),
-                                                                VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                                                                VMA_MEMORY_USAGE_CPU_TO_GPU);
-
-    VmaAllocationInfo allocInfo{};
-    vmaGetAllocationInfo(_deviceManager->allocator(), matBuffer.allocation, &allocInfo);
-    auto *matConstants = (GLTFMetallic_Roughness::MaterialConstants *) allocInfo.pMappedData;
-    *matConstants = {};
-    matConstants->colorFactors = glm::vec4(1.0f);
-    matResources.dataBuffer = matBuffer.buffer;
-    matResources.dataBufferOffset = 0;
-
-    auto defaultMaterial = std::make_shared<GLTFMaterial>();
-    defaultMaterial->data = metalRoughMaterial.write_material(
-        _deviceManager->device(), MaterialPass::MainColor,
-        matResources, *_context->descriptors);
-
-    //build cube mesh
+    // Register default primitives as dynamic scene instances
+    if (_sceneManager)
     {
-        std::vector<Vertex> verts;
-        std::vector<uint32_t> inds;
-        primitives::buildCube(verts, inds);
-
-        cubeMesh = std::make_shared<MeshAsset>();
-        cubeMesh->name = "Cube";
-        cubeMesh->meshBuffers = _resourceManager->uploadMesh(inds, verts);
-
-        GeoSurface surf{};
-        surf.startIndex = 0;
-        surf.count = (uint32_t) inds.size();
-        surf.material = defaultMaterial;
-        surf.bounds.origin = glm::vec3(0.0f);
-        surf.bounds.extents = glm::vec3(0.5f);
-        surf.bounds.sphereRadius = glm::length(surf.bounds.extents);
-        cubeMesh->surfaces.push_back(surf);
+        _sceneManager->addMeshInstance("default.cube", cubeMesh,
+                                       glm::translate(glm::mat4(1.f), glm::vec3(-2.f, 0.f, -2.f)));
+        _sceneManager->addMeshInstance("default.sphere", sphereMesh,
+                                       glm::translate(glm::mat4(1.f), glm::vec3(2.f, 0.f, -2.f)));
     }
-
-    //build sphere mesh
-    {
-        std::vector<Vertex> verts;
-        std::vector<uint32_t> inds;
-        primitives::buildSphere(verts, inds);
-
-        sphereMesh = std::make_shared<MeshAsset>();
-        sphereMesh->name = "Sphere";
-        sphereMesh->meshBuffers = _resourceManager->uploadMesh(inds, verts);
-
-        GeoSurface surf{};
-        surf.startIndex = 0;
-        surf.count = static_cast<uint32_t>(inds.size());
-        surf.material = defaultMaterial;
-        surf.bounds.origin = glm::vec3(0.0f);
-        surf.bounds.extents = glm::vec3(0.5f);
-        surf.bounds.sphereRadius = glm::length(surf.bounds.extents);
-        sphereMesh->surfaces.push_back(surf);
-    }
-
-    _mainDeletionQueue.push_function([&]() {
-        // Clean up mesh buffers
-        if (cubeMesh)
-        {
-            _resourceManager->destroy_buffer(cubeMesh->meshBuffers.indexBuffer);
-            _resourceManager->destroy_buffer(cubeMesh->meshBuffers.vertexBuffer);
-        }
-        if (sphereMesh)
-        {
-            _resourceManager->destroy_buffer(sphereMesh->meshBuffers.indexBuffer);
-            _resourceManager->destroy_buffer(sphereMesh->meshBuffers.vertexBuffer);
-        }
-    });
-
-    // Expose default meshes to context for modules that need them
-    _context->cubeMesh = cubeMesh;
-    _context->sphereMesh = sphereMesh;
-
-    _mainDeletionQueue.push_function([=]() { _resourceManager->destroy_buffer(matBuffer); });
 
     _mainDeletionQueue.push_function([&]() {
         _resourceManager->destroy_image(_whiteImage);
@@ -268,13 +203,15 @@ void VulkanEngine::cleanup()
 
         _mainDeletionQueue.flush();
 
-        _renderPassManager->cleanup();
+    _renderPassManager->cleanup();
 
         _pipelineManager->cleanup();
 
         compute.cleanup();
 
         _swapchainManager->cleanup();
+
+        if (_assetManager) _assetManager->cleanup();
 
         _resourceManager->cleanup();
 

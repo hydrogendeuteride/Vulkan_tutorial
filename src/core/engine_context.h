@@ -27,6 +27,7 @@ class ComputeManager;
 class PipelineManager;
 struct FrameResources;
 struct SDL_Window;
+class AssetManager;
 
 class EngineContext
 {
@@ -52,9 +53,10 @@ public:
     // Frequently used values
     VkExtent2D drawExtent{};
 
-    // Optional convenience content pointers
-    std::shared_ptr<MeshAsset> cubeMesh;
-    std::shared_ptr<MeshAsset> sphereMesh;
+    // Optional convenience content pointers (moved to AssetManager for meshes)
+
+    // Assets
+    AssetManager* assets = nullptr;              // non-owning pointer to central AssetManager
 
     // Accessors
     DeviceManager *getDevice() const { return device.get(); }
@@ -66,4 +68,7 @@ public:
     const GPUSceneData& getSceneData() const;
     const DrawContext& getMainDrawContext() const;
     VkExtent2D getDrawExtent() const { return drawExtent; }
+    AssetManager* getAssets() const { return assets; }
+    // Convenience alias (singular) requested
+    AssetManager* getAsset() const { return assets; }
 };

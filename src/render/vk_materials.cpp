@@ -4,6 +4,7 @@
 #include "render/vk_pipelines.h"
 #include "core/vk_initializers.h"
 #include "core/vk_pipeline_manager.h"
+#include "core/asset_manager.h"
 
 namespace vkutil { bool load_shader_module(const char*, VkDevice, VkShaderModule*); }
 
@@ -29,8 +30,8 @@ void GLTFMetallic_Roughness::build_pipelines(VulkanEngine *engine)
 
     // Register pipelines with the central PipelineManager
     GraphicsPipelineCreateInfo opaqueInfo{};
-    opaqueInfo.vertexShaderPath = "../shaders/mesh.vert.spv";
-    opaqueInfo.fragmentShaderPath = "../shaders/mesh.frag.spv";
+    opaqueInfo.vertexShaderPath = engine->_context->getAssets()->shaderPath("mesh.vert.spv");
+    opaqueInfo.fragmentShaderPath = engine->_context->getAssets()->shaderPath("mesh.frag.spv");
     opaqueInfo.setLayouts.assign(std::begin(layouts), std::end(layouts));
     opaqueInfo.pushConstants = {matrixRange};
     opaqueInfo.configure = [engine](PipelineBuilder &b) {
@@ -59,8 +60,8 @@ void GLTFMetallic_Roughness::build_pipelines(VulkanEngine *engine)
     engine->_pipelineManager->registerGraphics("mesh.transparent", transparentInfo);
 
     GraphicsPipelineCreateInfo gbufferInfo{};
-    gbufferInfo.vertexShaderPath = "../shaders/mesh.vert.spv";
-    gbufferInfo.fragmentShaderPath = "../shaders/gbuffer.frag.spv";
+    gbufferInfo.vertexShaderPath = engine->_context->getAssets()->shaderPath("mesh.vert.spv");
+    gbufferInfo.fragmentShaderPath = engine->_context->getAssets()->shaderPath("gbuffer.frag.spv");
     gbufferInfo.setLayouts.assign(std::begin(layouts), std::end(layouts));
     gbufferInfo.pushConstants = {matrixRange};
     gbufferInfo.configure = [engine](PipelineBuilder &b) {

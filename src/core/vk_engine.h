@@ -27,6 +27,7 @@
 #include "vk_sampler_manager.h"
 #include "core/engine_context.h"
 #include "core/vk_pipeline_manager.h"
+#include "core/asset_manager.h"
 
 constexpr unsigned int FRAME_OVERLAP = 2;
 
@@ -58,6 +59,7 @@ public:
     std::unique_ptr<RenderPassManager> _renderPassManager;
     std::unique_ptr<SceneManager> _sceneManager;
     std::unique_ptr<PipelineManager> _pipelineManager;
+    std::unique_ptr<AssetManager> _assetManager;
 
 	struct SDL_Window *_window{nullptr};
 

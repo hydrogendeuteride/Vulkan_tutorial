@@ -43,6 +43,30 @@ public:
 
     std::shared_ptr<LoadedGLTF> getScene(const std::string &name);
 
+    // Dynamic renderables API
+    struct MeshInstance
+    {
+        std::shared_ptr<MeshAsset> mesh;
+        glm::mat4 transform{1.f};
+    };
+
+    void addMeshInstance(const std::string &name, std::shared_ptr<MeshAsset> mesh,
+                         const glm::mat4 &transform = glm::mat4(1.f));
+    bool removeMeshInstance(const std::string &name);
+    void clearMeshInstances();
+
+    // GLTF instances (runtime-spawned scenes with transforms)
+    struct GLTFInstance
+    {
+        std::shared_ptr<LoadedGLTF> scene;
+        glm::mat4 transform{1.f};
+    };
+
+    void addGLTFInstance(const std::string &name, std::shared_ptr<LoadedGLTF> scene,
+                         const glm::mat4 &transform = glm::mat4(1.f));
+    bool removeGLTFInstance(const std::string &name);
+    void clearGLTFInstances();
+
     struct SceneStats
     {
         float scene_update_time = 0.f;
@@ -57,4 +81,6 @@ private:
 
     std::unordered_map<std::string, std::shared_ptr<LoadedGLTF> > loadedScenes;
     std::unordered_map<std::string, std::shared_ptr<Node> > loadedNodes;
+    std::unordered_map<std::string, MeshInstance> dynamicMeshInstances;
+    std::unordered_map<std::string, GLTFInstance> dynamicGLTFInstances;
 };
