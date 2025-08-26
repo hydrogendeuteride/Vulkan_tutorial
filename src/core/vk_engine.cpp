@@ -156,9 +156,23 @@ void VulkanEngine::init_default_data()
                                                              VK_FORMAT_R8G8B8A8_UNORM,
                                                              VK_IMAGE_USAGE_SAMPLED_BIT);
 
-    // build default primitive meshes via AssetManager
-    cubeMesh = _assetManager->createCube("Cube");
-    sphereMesh = _assetManager->createSphere("Sphere");
+    // build default primitive meshes via generic AssetManager API
+    {
+        AssetManager::MeshCreateInfo ci{};
+        ci.name = "Cube";
+        ci.geometry.type = AssetManager::MeshGeometryDesc::Type::Cube;
+        ci.material.kind = AssetManager::MeshMaterialDesc::Kind::Default;
+        cubeMesh = _assetManager->createMesh(ci);
+    }
+    {
+        AssetManager::MeshCreateInfo ci{};
+        ci.name = "Sphere";
+        ci.geometry.type = AssetManager::MeshGeometryDesc::Type::Sphere;
+        ci.geometry.sectors = 16;
+        ci.geometry.stacks = 16;
+        ci.material.kind = AssetManager::MeshMaterialDesc::Kind::Default;
+        sphereMesh = _assetManager->createMesh(ci);
+    }
 
     // Register default primitives as dynamic scene instances
     if (_sceneManager)
