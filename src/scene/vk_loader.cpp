@@ -38,8 +38,8 @@ std::optional<AllocatedImage> load_image(VulkanEngine *engine, fastgltf::Asset &
                     imagesize.height = height;
                     imagesize.depth = 1;
 
-                    newImage = engine->_resourceManager->create_image(data, imagesize, VK_FORMAT_R8G8B8A8_UNORM,
-                                                    VK_IMAGE_USAGE_SAMPLED_BIT, false);
+                    newImage = engine->_resourceManager->create_image(
+                        data, imagesize, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT, false);
 
                     stbi_image_free(data);
                 }
@@ -54,8 +54,8 @@ std::optional<AllocatedImage> load_image(VulkanEngine *engine, fastgltf::Asset &
                     imagesize.height = height;
                     imagesize.depth = 1;
 
-                    newImage = engine->_resourceManager->create_image(data, imagesize, VK_FORMAT_R8G8B8A8_UNORM,
-                                                    VK_IMAGE_USAGE_SAMPLED_BIT, false);
+                    newImage = engine->_resourceManager->create_image(
+                        data, imagesize, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT, false);
 
                     stbi_image_free(data);
                 }
@@ -82,8 +82,8 @@ std::optional<AllocatedImage> load_image(VulkanEngine *engine, fastgltf::Asset &
                                        imagesize.height = height;
                                        imagesize.depth = 1;
 
-                                       newImage = engine->_resourceManager->create_image(data, imagesize, VK_FORMAT_R8G8B8A8_UNORM,
-                                                                       VK_IMAGE_USAGE_SAMPLED_BIT, false);
+                                       newImage = engine->_resourceManager->create_image(
+                                           data, imagesize, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT, false);
 
                                        stbi_image_free(data);
                                    }
@@ -240,6 +240,7 @@ std::optional<std::shared_ptr<LoadedGLTF> > loadGltf(VulkanEngine *engine, std::
     // load all textures
     for (fastgltf::Image &image: gltf.images)
     {
+        // Default-load GLTF images as linear; baseColor is reloaded as sRGB when bound
         std::optional<AllocatedImage> img = load_image(engine, gltf, image);
 
         if (img.has_value())
@@ -303,11 +304,42 @@ std::optional<std::shared_ptr<LoadedGLTF> > loadGltf(VulkanEngine *engine, std::
         // grab textures from gltf file
         if (mat.pbrData.baseColorTexture.has_value())
         {
-            size_t img = gltf.textures[mat.pbrData.baseColorTexture.value().textureIndex].imageIndex.value();
+            size_t imgIndex = gltf.textures[mat.pbrData.baseColorTexture.value().textureIndex].imageIndex.value();
             size_t sampler = gltf.textures[mat.pbrData.baseColorTexture.value().textureIndex].samplerIndex.value();
 
-            materialResources.colorImage = images[img];
+            // Reload albedo as sRGB, independent of the global image cache
+            if (imgIndex < gltf.images.size())
+            {
+                auto albedoImg = load_image(engine, gltf, gltf.images[imgIndex]);
+                if (albedoImg.has_value())
+                {
+                    materialResources.colorImage = *albedoImg;
+                    // Track for cleanup using a unique key
+                    std::string key = std::string("albedo_") + mat.name.c_str() + "_" + std::to_string(imgIndex);
+                    file.images[key] = *albedoImg;
+                }
+                else
+                {
+                    materialResources.colorImage = images[imgIndex];
+                }
+            }
+            else
+            {
+                materialResources.colorImage = engine->_errorCheckerboardImage;
+            }
             materialResources.colorSampler = file.samplers[sampler];
+        }
+
+        // Metallic-Roughness texture
+        if (mat.pbrData.metallicRoughnessTexture.has_value())
+        {
+            size_t imgIndex = gltf.textures[mat.pbrData.metallicRoughnessTexture.value().textureIndex].imageIndex.value();
+            size_t sampler = gltf.textures[mat.pbrData.metallicRoughnessTexture.value().textureIndex].samplerIndex.value();
+            if (imgIndex < images.size())
+            {
+                materialResources.metalRoughImage = images[imgIndex];
+                materialResources.metalRoughSampler = file.samplers[sampler];
+            }
         }
         // build material
         newMat->data = engine->metalRoughMaterial.write_material(engine->_deviceManager->device(), passType, materialResources,
