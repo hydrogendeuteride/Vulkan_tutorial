@@ -128,6 +128,8 @@ AllocatedImage ResourceManager::create_image(const void *data, VkExtent3D size, 
 
     memcpy(uploadbuffer.info.pMappedData, data, data_size);
 
+    vmaFlushAllocation(_deviceManager->allocator(), uploadbuffer.allocation, 0, data_size);
+
     AllocatedImage new_image = create_image(size, format,
                                             usage | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
                                             mipmapped);

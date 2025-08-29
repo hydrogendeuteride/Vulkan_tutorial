@@ -12,8 +12,9 @@
 #include <fastgltf/parser.hpp>
 #include <fastgltf/tools.hpp>
 #include <fastgltf/util.hpp>
+#include <optional>
 //> loadimg
-std::optional<AllocatedImage> load_image(VulkanEngine *engine, fastgltf::Asset &asset, fastgltf::Image &image)
+std::optional<AllocatedImage> load_image(VulkanEngine *engine, fastgltf::Asset &asset, fastgltf::Image &image, bool srgb)
 {
     AllocatedImage newImage{};
 
@@ -38,8 +39,9 @@ std::optional<AllocatedImage> load_image(VulkanEngine *engine, fastgltf::Asset &
                     imagesize.height = height;
                     imagesize.depth = 1;
 
+                    VkFormat fmt = srgb ? VK_FORMAT_R8G8B8A8_SRGB : VK_FORMAT_R8G8B8A8_UNORM;
                     newImage = engine->_resourceManager->create_image(
-                        data, imagesize, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT, false);
+                        data, imagesize, fmt, VK_IMAGE_USAGE_SAMPLED_BIT, false);
 
                     stbi_image_free(data);
                 }
@@ -54,8 +56,9 @@ std::optional<AllocatedImage> load_image(VulkanEngine *engine, fastgltf::Asset &
                     imagesize.height = height;
                     imagesize.depth = 1;
 
+                    VkFormat fmt = srgb ? VK_FORMAT_R8G8B8A8_SRGB : VK_FORMAT_R8G8B8A8_UNORM;
                     newImage = engine->_resourceManager->create_image(
-                        data, imagesize, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT, false);
+                        data, imagesize, fmt, VK_IMAGE_USAGE_SAMPLED_BIT, false);
 
                     stbi_image_free(data);
                 }
@@ -82,8 +85,9 @@ std::optional<AllocatedImage> load_image(VulkanEngine *engine, fastgltf::Asset &
                                        imagesize.height = height;
                                        imagesize.depth = 1;
 
+                                       VkFormat fmt = srgb ? VK_FORMAT_R8G8B8A8_SRGB : VK_FORMAT_R8G8B8A8_UNORM;
                                        newImage = engine->_resourceManager->create_image(
-                                           data, imagesize, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT, false);
+                                           data, imagesize, fmt, VK_IMAGE_USAGE_SAMPLED_BIT, false);
 
                                        stbi_image_free(data);
                                    }
@@ -216,12 +220,26 @@ std::optional<std::shared_ptr<LoadedGLTF> > loadGltf(VulkanEngine *engine, std::
     {
         VkSamplerCreateInfo sampl = {.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO, .pNext = nullptr};
         sampl.maxLod = VK_LOD_CLAMP_NONE;
-        sampl.minLod = 0;
+        sampl.minLod = 0.0f;
 
         sampl.magFilter = extract_filter(sampler.magFilter.value_or(fastgltf::Filter::Nearest));
         sampl.minFilter = extract_filter(sampler.minFilter.value_or(fastgltf::Filter::Nearest));
-
         sampl.mipmapMode = extract_mipmap_mode(sampler.minFilter.value_or(fastgltf::Filter::Nearest));
+
+        // Address modes: default to glTF Repeat
+        auto toAddress = [](fastgltf::Wrap w) -> VkSamplerAddressMode {
+            switch (w) {
+                case fastgltf::Wrap::ClampToEdge: return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+                case fastgltf::Wrap::MirroredRepeat: return VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
+                case fastgltf::Wrap::Repeat:
+                default: return VK_SAMPLER_ADDRESS_MODE_REPEAT;
+            }
+        };
+        // fastgltf::Sampler::wrapS/wrapT are non-optional and already default to Repeat
+        sampl.addressModeU = toAddress(sampler.wrapS);
+        sampl.addressModeV = toAddress(sampler.wrapT);
+        sampl.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        sampl.unnormalizedCoordinates = VK_FALSE;
 
         VkSampler newSampler;
         vkCreateSampler(engine->_deviceManager->device(), &sampl, nullptr, &newSampler);
@@ -241,7 +259,7 @@ std::optional<std::shared_ptr<LoadedGLTF> > loadGltf(VulkanEngine *engine, std::
     for (fastgltf::Image &image: gltf.images)
     {
         // Default-load GLTF images as linear; baseColor is reloaded as sRGB when bound
-        std::optional<AllocatedImage> img = load_image(engine, gltf, image);
+        std::optional<AllocatedImage> img = load_image(engine, gltf, image, false);
 
         if (img.has_value())
         {
@@ -310,7 +328,7 @@ std::optional<std::shared_ptr<LoadedGLTF> > loadGltf(VulkanEngine *engine, std::
             // Reload albedo as sRGB, independent of the global image cache
             if (imgIndex < gltf.images.size())
             {
-                auto albedoImg = load_image(engine, gltf, gltf.images[imgIndex]);
+                auto albedoImg = load_image(engine, gltf, gltf.images[imgIndex], true);
                 if (albedoImg.has_value())
                 {
                     materialResources.colorImage = *albedoImg;
