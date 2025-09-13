@@ -213,6 +213,9 @@ AllocatedBuffer AssetManager::createMaterialBufferWithConstants(
     {
         matConstants->colorFactors = glm::vec4(1.0f);
     }
+    // Ensure writes are visible on non-coherent memory
+    vmaFlushAllocation(_engine->_deviceManager->allocator(), matBuffer.allocation, 0,
+                       sizeof(GLTFMetallic_Roughness::MaterialConstants));
     return matBuffer;
 }
 

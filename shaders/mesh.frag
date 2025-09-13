@@ -49,11 +49,12 @@ float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
 
 void main()
 {
+    // Apply baseColor texture and baseColorFactor once
     vec3 albedo = inColor * texture(colorTex, inUV).rgb * materialData.colorFactors.rgb;
     // glTF: metallicRoughnessTexture uses G=roughness, B=metallic
-    vec2 mr = texture(metalRoughTex, inUV).gb * materialData.metal_rough_factors.xy;
-    float roughness = clamp(mr.x, 0.04, 1.0);
-    float metallic = clamp(mr.y, 0.0, 1.0);
+    vec2 mrTex = texture(metalRoughTex, inUV).gb;
+    float roughness = clamp(mrTex.x * materialData.metal_rough_factors.y, 0.04, 1.0);
+    float metallic  = clamp(mrTex.y * materialData.metal_rough_factors.x, 0.0, 1.0);
 
     vec3 N = normalize(inNormal);
     vec3 camPos = vec3(inverse(sceneData.view)[3]);

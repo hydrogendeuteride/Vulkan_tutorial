@@ -134,6 +134,8 @@ void GeometryPass::draw_geometry(VkCommandBuffer cmd) const
     vmaGetAllocationInfo(_context->device->allocator(), gpuSceneDataBuffer.allocation, &allocInfo);
     auto *sceneUniformData = static_cast<GPUSceneData *>(allocInfo.pMappedData);
     *sceneUniformData = sceneData;
+    // Ensure visibility on non-coherent memory (e.g., discrete NVIDIA)
+    vmaFlushAllocation(_context->device->allocator(), gpuSceneDataBuffer.allocation, 0, sizeof(GPUSceneData));
 
     //create a descriptor set that binds that buffer and update it
     VkDescriptorSet globalDescriptor = _context->currentFrame->_frameDescriptors.allocate(

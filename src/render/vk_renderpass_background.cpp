@@ -49,8 +49,6 @@ void BackgroundPass::execute(VkCommandBuffer cmd)
 {
     vkutil::transition_image(cmd, _context->getSwapchain()->depthImage().image, VK_IMAGE_LAYOUT_UNDEFINED,
                              VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
-    vkutil::transition_image(cmd, _context->getSwapchain()->depthImage().image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                             VK_IMAGE_LAYOUT_GENERAL);
 
     _context->pipelines->setComputeInstanceStorageImage("background.gradient", 0,
                                                         _context->getSwapchain()->drawImage().imageView);

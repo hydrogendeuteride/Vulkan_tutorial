@@ -322,8 +322,11 @@ std::optional<std::shared_ptr<LoadedGLTF> > loadGltf(VulkanEngine *engine, std::
         // grab textures from gltf file
         if (mat.pbrData.baseColorTexture.has_value())
         {
-            size_t imgIndex = gltf.textures[mat.pbrData.baseColorTexture.value().textureIndex].imageIndex.value();
-            size_t sampler = gltf.textures[mat.pbrData.baseColorTexture.value().textureIndex].samplerIndex.value();
+            const auto &tex = gltf.textures[mat.pbrData.baseColorTexture.value().textureIndex];
+            size_t imgIndex = tex.imageIndex.value();
+            // Sampler is optional in glTF; fall back to default if missing
+            bool hasSampler = tex.samplerIndex.has_value();
+            size_t sampler = hasSampler ? tex.samplerIndex.value() : SIZE_MAX;
 
             // Reload albedo as sRGB, independent of the global image cache
             if (imgIndex < gltf.images.size())
@@ -345,18 +348,22 @@ std::optional<std::shared_ptr<LoadedGLTF> > loadGltf(VulkanEngine *engine, std::
             {
                 materialResources.colorImage = engine->_errorCheckerboardImage;
             }
-            materialResources.colorSampler = file.samplers[sampler];
+            materialResources.colorSampler = hasSampler ? file.samplers[sampler]
+                                                        : engine->_samplerManager->defaultLinear();
         }
 
         // Metallic-Roughness texture
         if (mat.pbrData.metallicRoughnessTexture.has_value())
         {
-            size_t imgIndex = gltf.textures[mat.pbrData.metallicRoughnessTexture.value().textureIndex].imageIndex.value();
-            size_t sampler = gltf.textures[mat.pbrData.metallicRoughnessTexture.value().textureIndex].samplerIndex.value();
+            const auto &tex = gltf.textures[mat.pbrData.metallicRoughnessTexture.value().textureIndex];
+            size_t imgIndex = tex.imageIndex.value();
+            bool hasSampler = tex.samplerIndex.has_value();
+            size_t sampler = hasSampler ? tex.samplerIndex.value() : SIZE_MAX;
             if (imgIndex < images.size())
             {
                 materialResources.metalRoughImage = images[imgIndex];
-                materialResources.metalRoughSampler = file.samplers[sampler];
+                materialResources.metalRoughSampler = hasSampler ? file.samplers[sampler]
+                                                                  : engine->_samplerManager->defaultLinear();
             }
         }
         // build material
@@ -366,6 +373,13 @@ std::optional<std::shared_ptr<LoadedGLTF> > loadGltf(VulkanEngine *engine, std::
         data_index++;
     }
     //< load_material
+
+    // Flush material constants buffer so GPU sees updated data on non-coherent memory
+    if (!gltf.materials.empty())
+    {
+        VkDeviceSize totalSize = sizeof(GLTFMetallic_Roughness::MaterialConstants) * gltf.materials.size();
+        vmaFlushAllocation(engine->_deviceManager->allocator(), file.materialDataBuffer.allocation, 0, totalSize);
+    }
 
     // use the same vectors for all meshes so that the memory doesnt reallocate as
     // often

@@ -135,6 +135,7 @@ AllocatedImage ResourceManager::create_image(const void *data, VkExtent3D size, 
                                             mipmapped);
 
     immediate_submit([&](VkCommandBuffer cmd) {
+        // Make the whole image writable by transfer before upload
         vkutil::transition_image(cmd, new_image.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
         VkBufferImageCopy copyRegion = {};
@@ -148,12 +149,21 @@ AllocatedImage ResourceManager::create_image(const void *data, VkExtent3D size, 
         copyRegion.imageSubresource.layerCount = 1;
         copyRegion.imageExtent = size;
 
-        // copy the buffer into the image
+        // copy the buffer into the base mip
         vkCmdCopyBufferToImage(cmd, uploadbuffer.buffer, new_image.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1,
                                &copyRegion);
 
-        vkutil::transition_image(cmd, new_image.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                                 VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        if (mipmapped)
+        {
+            // Generate all mip levels and transition to SHADER_READ_ONLY
+            vkutil::generate_mipmaps(cmd, new_image.image, VkExtent2D{size.width, size.height});
+        }
+        else
+        {
+            // Transition directly to shader read for non-mipmapped textures
+            vkutil::transition_image(cmd, new_image.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                     VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        }
     });
 
     destroy_buffer(uploadbuffer);
@@ -198,10 +208,11 @@ GPUMeshBuffers ResourceManager::uploadMesh(std::span<uint32_t> indices, std::spa
     vmaGetAllocationInfo(_deviceManager->allocator(), staging.allocation, &allocInfo);
     void *data = allocInfo.pMappedData;
 
-    // copy vertex buffer
+    // copy vertex/index data to staging (host visible)
     memcpy(data, vertices.data(), vertexBufferSize);
-    // copy index buffer
     memcpy((char *) data + vertexBufferSize, indices.data(), indexBufferSize);
+    // Ensure visibility on non-coherent memory before GPU copies
+    vmaFlushAllocation(_deviceManager->allocator(), staging.allocation, 0, vertexBufferSize + indexBufferSize);
 
     immediate_submit([&](VkCommandBuffer cmd) {
         VkBufferCopy vertexCopy{0};

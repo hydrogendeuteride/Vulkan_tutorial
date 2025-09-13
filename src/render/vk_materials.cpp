@@ -40,6 +40,7 @@ void GLTFMetallic_Roughness::build_pipelines(VulkanEngine *engine)
         b.set_cull_mode(VK_CULL_MODE_NONE, VK_FRONT_FACE_CLOCKWISE);
         b.set_multisampling_none();
         b.disable_blending();
+        // Reverse-Z depth test configuration
         b.enable_depthtest(true, VK_COMPARE_OP_GREATER_OR_EQUAL);
         b.set_color_attachment_format(engine->_swapchainManager->drawImage().imageFormat);
         b.set_depth_format(engine->_swapchainManager->depthImage().imageFormat);
@@ -53,6 +54,7 @@ void GLTFMetallic_Roughness::build_pipelines(VulkanEngine *engine)
         b.set_cull_mode(VK_CULL_MODE_NONE, VK_FRONT_FACE_CLOCKWISE);
         b.set_multisampling_none();
         b.enable_blending_additive();
+        // Transparent pass: keep reverse-Z test (no writes)
         b.enable_depthtest(false, VK_COMPARE_OP_GREATER_OR_EQUAL);
         b.set_color_attachment_format(engine->_swapchainManager->drawImage().imageFormat);
         b.set_depth_format(engine->_swapchainManager->depthImage().imageFormat);
@@ -70,6 +72,7 @@ void GLTFMetallic_Roughness::build_pipelines(VulkanEngine *engine)
         b.set_cull_mode(VK_CULL_MODE_NONE, VK_FRONT_FACE_CLOCKWISE);
         b.set_multisampling_none();
         b.disable_blending();
+        // GBuffer uses reverse-Z depth
         b.enable_depthtest(true, VK_COMPARE_OP_GREATER_OR_EQUAL);
         VkFormat gFormats[] = {
             engine->_swapchainManager->gBufferPosition().imageFormat,

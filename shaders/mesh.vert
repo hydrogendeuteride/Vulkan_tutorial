@@ -38,7 +38,8 @@ void main()
     gl_Position = sceneData.viewproj * worldPos;
 
     outNormal = (PushConstants.render_matrix * vec4(v.normal, 0.f)).xyz;
-    outColor = v.color.xyz * materialData.colorFactors.xyz;
+    // Pass pure vertex color; apply baseColorFactor only in fragment
+    outColor = v.color.xyz;
     outUV.x = v.uv_x;
     outUV.y = v.uv_y;
     outWorldPos = worldPos.xyz;

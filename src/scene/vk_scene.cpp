@@ -73,6 +73,7 @@ void SceneManager::update_scene()
     }
 
     glm::mat4 view = mainCamera.getViewMatrix();
+    // Reverse-Z configuration: original code path
     glm::mat4 projection = glm::perspective(
         glm::radians(70.f),
         (float) _context->getSwapchain()->windowExtent().width / (float) _context->getSwapchain()->windowExtent().height,

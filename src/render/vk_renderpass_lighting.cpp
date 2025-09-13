@@ -116,6 +116,8 @@ void LightingPass::draw_lighting(VkCommandBuffer cmd)
     vmaGetAllocationInfo(_context->getDevice()->allocator(), gpuSceneDataBuffer.allocation, &allocInfo);
     auto *sceneUniformData = static_cast<GPUSceneData *>(allocInfo.pMappedData);
     *sceneUniformData = _context->getSceneData();
+    // Ensure visibility on non-coherent memory (e.g., discrete NVIDIA)
+    vmaFlushAllocation(_context->getDevice()->allocator(), gpuSceneDataBuffer.allocation, 0, sizeof(GPUSceneData));
 
     VkDescriptorSet globalDescriptor = _context->currentFrame->_frameDescriptors.allocate(
         _context->getDevice()->device(), _context->getDescriptorLayouts()->gpuSceneDataLayout());
