@@ -28,6 +28,7 @@ class PipelineManager;
 struct FrameResources;
 struct SDL_Window;
 class AssetManager;
+class RenderGraph;
 
 class EngineContext
 {
@@ -48,6 +49,7 @@ public:
     EngineStats* stats = nullptr;                // points to engine stats
     ComputeManager* compute = nullptr;           // compute subsystem
     PipelineManager* pipelines = nullptr;        // graphics pipeline manager
+    RenderGraph* renderGraph = nullptr;          // render graph (built per-frame)
     SDL_Window* window = nullptr;                // SDL window handle
 
     // Frequently used values
@@ -71,4 +73,5 @@ public:
     AssetManager* getAssets() const { return assets; }
     // Convenience alias (singular) requested
     AssetManager* getAsset() const { return assets; }
+    RenderGraph* getRenderGraph() const { return renderGraph; }
 };

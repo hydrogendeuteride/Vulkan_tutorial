@@ -46,6 +46,14 @@ add_executable (engine
   render/vk_renderpass_lighting.cpp
   render/vk_renderpass_imgui.h
   render/vk_renderpass_imgui.cpp
+  # render graph (initial skeleton)
+  render/rg_types.h
+  render/rg_graph.h
+  render/rg_graph.cpp
+  render/rg_builder.h
+  render/rg_builder.cpp
+  render/rg_resources.h
+  render/rg_resources.cpp
   render/vk_materials.h
   render/vk_materials.cpp
   render/primitives.h

@@ -102,6 +102,11 @@ void VulkanEngine::init()
     _context->window = _window;
     _context->stats = &stats;
 
+    // Render graph skeleton
+    _renderGraph = std::make_unique<RenderGraph>();
+    _renderGraph->init(_context.get());
+    _context->renderGraph = _renderGraph.get();
+
     init_frame_resources();
 
     // Build material pipelines early so materials can be created
@@ -290,6 +295,28 @@ void VulkanEngine::draw()
     if (_pipelineManager)
     {
         _pipelineManager->hotReloadChanged();
+    }
+
+    // --- RenderGraph frame build ---
+    if (_renderGraph)
+    {
+        _renderGraph->clear();
+
+        RGImageHandle hDraw = _renderGraph->import_draw_image();
+        RGImageHandle hDepth = _renderGraph->import_depth_image();
+
+        if (_renderPassManager)
+        {
+            if (auto *background = _renderPassManager->getPass<BackgroundPass>())
+            {
+                background->register_graph(_renderGraph.get(), hDraw, hDepth);
+            }
+        }
+
+        if (_renderGraph->compile())
+        {
+            _renderGraph->execute(cmd);
+        }
     }
 
     _renderPassManager->executeAll(cmd);
