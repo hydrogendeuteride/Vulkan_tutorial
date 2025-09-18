@@ -5,6 +5,7 @@
 #include <functional>
 
 class EngineContext;
+class ImGuiPass;
 
 class IRenderPass
 {
@@ -29,11 +30,9 @@ public:
 
     void addPass(std::unique_ptr<IRenderPass> pass);
 
-    void executeAll(VkCommandBuffer cmd) const;
-
     void setImGuiPass(std::unique_ptr<IRenderPass> imguiPass);
 
-    void executeImGui(VkCommandBuffer cmd, VkImageView targetImageView);
+    ImGuiPass *getImGuiPass();
 
     template<typename T>
     T *getPass()

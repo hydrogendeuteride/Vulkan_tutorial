@@ -1,5 +1,6 @@
 #include <render/rg_graph.h>
 #include <core/engine_context.h>
+#include <core/vk_images.h>
 #include <core/vk_initializers.h>
 
 #include <unordered_map>
@@ -240,6 +241,43 @@ void RenderGraph::execute(VkCommandBuffer cmd)
 }
 
 // --- Import helpers ---
+void RenderGraph::add_present_chain(RGImageHandle sourceDraw,
+                                    RGImageHandle targetSwapchain,
+                                    std::function<void(RenderGraph&)> appendExtra)
+{
+    if (!sourceDraw.valid() || !targetSwapchain.valid()) return;
+
+    add_pass(
+        "CopyToSwapchain",
+        RGPassType::Transfer,
+        [sourceDraw, targetSwapchain](RGPassBuilder &builder, EngineContext *)
+        {
+            builder.read(sourceDraw, RGImageUsage::TransferSrc);
+            builder.write(targetSwapchain, RGImageUsage::TransferDst);
+        },
+        [sourceDraw, targetSwapchain](VkCommandBuffer cmd, const RGPassResources &res, EngineContext *ctx)
+        {
+            VkImage src = res.image(sourceDraw);
+            VkImage dst = res.image(targetSwapchain);
+            if (src == VK_NULL_HANDLE || dst == VK_NULL_HANDLE) return;
+            vkutil::copy_image_to_image(cmd, src, dst, ctx->getDrawExtent(), ctx->getSwapchain()->swapchainExtent());
+        });
+
+    if (appendExtra)
+    {
+        appendExtra(*this);
+    }
+
+    add_pass(
+        "PreparePresent",
+        RGPassType::Transfer,
+        [targetSwapchain](RGPassBuilder &builder, EngineContext *)
+        {
+            builder.write(targetSwapchain, RGImageUsage::Present);
+        },
+        [](VkCommandBuffer, const RGPassResources &, EngineContext *) {});
+}
+
 RGImageHandle RenderGraph::import_draw_image()
 {
     RGImportedImageDesc d{};

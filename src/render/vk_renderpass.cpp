@@ -28,8 +28,13 @@ void RenderPassManager::cleanup()
     {
         pass->cleanup();
     }
+    if (_imguiPass)
+    {
+        _imguiPass->cleanup();
+    }
     fmt::print("RenderPassManager::cleanup()\n");
     _passes.clear();
+    _imguiPass.reset();
 }
 
 void RenderPassManager::addPass(std::unique_ptr<IRenderPass> pass)
@@ -37,27 +42,17 @@ void RenderPassManager::addPass(std::unique_ptr<IRenderPass> pass)
     _passes.push_back(std::move(pass));
 }
 
-void RenderPassManager::executeAll(VkCommandBuffer cmd) const
-{
-    for (auto &pass: _passes)
-    {
-        pass->execute(cmd);
-    }
-}
-
 void RenderPassManager::setImGuiPass(std::unique_ptr<IRenderPass> imguiPass)
 {
     _imguiPass = std::move(imguiPass);
-    _imguiPass->init(_context);
-}
-
-void RenderPassManager::executeImGui(VkCommandBuffer cmd, VkImageView targetImageView)
-{
     if (_imguiPass)
     {
-        if (auto *imgui = dynamic_cast<ImGuiPass *>(_imguiPass.get()))
-        {
-            imgui->executeWithTarget(cmd, targetImageView);
-        }
+        _imguiPass->init(_context);
     }
+}
+
+ImGuiPass *RenderPassManager::getImGuiPass()
+{
+    if (!_imguiPass) return nullptr;
+    return dynamic_cast<ImGuiPass *>(_imguiPass.get());
 }

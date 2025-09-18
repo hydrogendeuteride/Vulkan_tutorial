@@ -5,9 +5,9 @@
 #include "imgui_impl_vulkan.h"
 #include "vk_device.h"
 #include "vk_swapchain.h"
-#include "core/vk_images.h"
 #include "core/vk_initializers.h"
 #include "core/engine_context.h"
+#include "render/rg_graph.h"
 
 void ImGuiPass::init(EngineContext *context)
 {
@@ -75,21 +75,43 @@ void ImGuiPass::cleanup()
     _deletionQueue.flush();
 }
 
-void ImGuiPass::execute(VkCommandBuffer cmd)
+void ImGuiPass::execute(VkCommandBuffer)
 {
+    // ImGui is executed via the render graph now.
 }
 
-void ImGuiPass::executeWithTarget(VkCommandBuffer cmd, VkImageView targetImageView) const
+void ImGuiPass::register_graph(RenderGraph *graph, RGImageHandle swapchainHandle)
 {
-    draw_imgui(cmd, targetImageView);
+    if (!graph || !swapchainHandle.valid()) return;
+
+    graph->add_pass(
+        "ImGui",
+        RGPassType::Graphics,
+        [swapchainHandle](RGPassBuilder &builder, EngineContext *)
+        {
+            builder.write_color(swapchainHandle, false, {});
+        },
+        [this, swapchainHandle](VkCommandBuffer cmd, const RGPassResources &res, EngineContext *ctx)
+        {
+            draw_imgui(cmd, ctx, res, swapchainHandle);
+        });
 }
 
-void ImGuiPass::draw_imgui(VkCommandBuffer cmd, VkImageView targetImageView) const
+void ImGuiPass::draw_imgui(VkCommandBuffer cmd,
+                           EngineContext *context,
+                           const RGPassResources &resources,
+                           RGImageHandle targetHandle) const
 {
+    EngineContext *ctxLocal = context ? context : _context;
+    if (!ctxLocal) return;
+
+    VkImageView targetImageView = resources.image_view(targetHandle);
+    if (targetImageView == VK_NULL_HANDLE) return;
+
     VkRenderingAttachmentInfo colorAttachment = vkinit::attachment_info(
         targetImageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
     VkRenderingInfo renderInfo = vkinit::rendering_info(
-        _context->getSwapchain()->swapchainExtent(), &colorAttachment, nullptr);
+        ctxLocal->getSwapchain()->swapchainExtent(), &colorAttachment, nullptr);
 
     vkCmdBeginRendering(cmd, &renderInfo);
     ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmd);

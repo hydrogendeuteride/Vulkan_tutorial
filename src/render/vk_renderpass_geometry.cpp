@@ -6,13 +6,13 @@
 #include "vk_descriptor_manager.h"
 #include "vk_device.h"
 #include "core/engine_context.h"
-#include "core/vk_images.h"
 #include "core/vk_initializers.h"
 #include "core/vk_resource.h"
 
 #include "vk_mem_alloc.h"
 #include "vk_scene.h"
 #include "vk_swapchain.h"
+#include "render/rg_graph.h"
 
 bool is_visible(const RenderObject &obj, const glm::mat4 &viewproj)
 {
@@ -59,24 +59,76 @@ void GeometryPass::init(EngineContext *context)
     _context = context;
 }
 
-void GeometryPass::execute(VkCommandBuffer cmd)
+void GeometryPass::execute(VkCommandBuffer)
 {
-    vkutil::transition_image(cmd, _context->getSwapchain()->gBufferPosition().image, VK_IMAGE_LAYOUT_UNDEFINED,
-                             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-    vkutil::transition_image(cmd, _context->getSwapchain()->gBufferNormal().image, VK_IMAGE_LAYOUT_UNDEFINED,
-                             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-    vkutil::transition_image(cmd, _context->getSwapchain()->gBufferAlbedo().image, VK_IMAGE_LAYOUT_UNDEFINED,
-                             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-    vkutil::transition_image(cmd, _context->getSwapchain()->depthImage().image, VK_IMAGE_LAYOUT_UNDEFINED,
-                             VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
-
-    draw_geometry(cmd);
+    // Geometry is executed via the render graph now.
 }
 
-void GeometryPass::draw_geometry(VkCommandBuffer cmd) const
+void GeometryPass::register_graph(RenderGraph *graph,
+                                  RGImageHandle gbufferPosition,
+                                  RGImageHandle gbufferNormal,
+                                  RGImageHandle gbufferAlbedo,
+                                  RGImageHandle depthHandle)
 {
-    const auto& mainDrawContext = _context->getMainDrawContext();
-    const auto& sceneData = _context->getSceneData();
+    if (!graph || !gbufferPosition.valid() || !gbufferNormal.valid() || !gbufferAlbedo.valid() || !depthHandle.valid())
+    {
+        return;
+    }
+
+    graph->add_pass(
+        "Geometry",
+        RGPassType::Graphics,
+        [gbufferPosition, gbufferNormal, gbufferAlbedo, depthHandle](RGPassBuilder &builder, EngineContext *)
+        {
+            VkClearValue clear{};
+            clear.color = {{0.f, 0.f, 0.f, 0.f}};
+
+            builder.write_color(gbufferPosition, true, clear);
+            builder.write_color(gbufferNormal, true, clear);
+            builder.write_color(gbufferAlbedo, true, clear);
+
+            VkClearValue depthClear{};
+            depthClear.depthStencil = {1.f, 0};
+            builder.write_depth(depthHandle, true, depthClear);
+        },
+        [this, gbufferPosition, gbufferNormal, gbufferAlbedo, depthHandle](VkCommandBuffer cmd,
+                                                                           const RGPassResources &res,
+                                                                           EngineContext *ctx)
+        {
+            draw_geometry(cmd, ctx, res, gbufferPosition, gbufferNormal, gbufferAlbedo, depthHandle);
+        });
+}
+
+void GeometryPass::draw_geometry(VkCommandBuffer cmd,
+                                 EngineContext *context,
+                                 const RGPassResources &resources,
+                                 RGImageHandle gbufferPosition,
+                                 RGImageHandle gbufferNormal,
+                                 RGImageHandle gbufferAlbedo,
+                                 RGImageHandle depthHandle) const
+{
+    EngineContext *ctxLocal = context ? context : _context;
+    if (!ctxLocal || !ctxLocal->currentFrame) return;
+
+    ResourceManager *resourceManager = ctxLocal->getResources();
+    DeviceManager *deviceManager = ctxLocal->getDevice();
+    DescriptorManager *descriptorLayouts = ctxLocal->getDescriptorLayouts();
+    if (!resourceManager || !deviceManager || !descriptorLayouts) return;
+
+    VkImageView positionView = resources.image_view(gbufferPosition);
+    VkImageView normalView = resources.image_view(gbufferNormal);
+    VkImageView albedoView = resources.image_view(gbufferAlbedo);
+    VkImageView depthView = resources.image_view(depthHandle);
+
+    if (positionView == VK_NULL_HANDLE || normalView == VK_NULL_HANDLE ||
+        albedoView == VK_NULL_HANDLE || depthView == VK_NULL_HANDLE)
+    {
+        return;
+    }
+
+    const auto& mainDrawContext = ctxLocal->getMainDrawContext();
+    const auto& sceneData = ctxLocal->getSceneData();
+    VkExtent2D drawExtent = ctxLocal->getDrawExtent();
 
     auto start = std::chrono::system_clock::now();
 
@@ -93,7 +145,8 @@ void GeometryPass::draw_geometry(VkCommandBuffer cmd) const
         opaque_draws.push_back(i);
     }
 
-    std::sort(opaque_draws.begin(), opaque_draws.end(), [&](const auto &iA, const auto &iB) {
+    std::sort(opaque_draws.begin(), opaque_draws.end(), [&](const auto &iA, const auto &iB)
+    {
         const RenderObject &A = mainDrawContext.OpaqueSurfaces[iA];
         const RenderObject &B = mainDrawContext.OpaqueSurfaces[iB];
         if (A.material == B.material)
@@ -103,53 +156,46 @@ void GeometryPass::draw_geometry(VkCommandBuffer cmd) const
         return A.material < B.material;
     });
 
-    //begin a render pass  connected to our draw image
     VkRenderingAttachmentInfo gbufferAttachments[3];
     VkClearValue gbufferClear{};
     gbufferClear.color = {{0.f, 0.f, 0.f, 0.f}};
-    gbufferAttachments[0] = vkinit::attachment_info( _context->getSwapchain()->gBufferPosition().imageView, &gbufferClear,
-                                                    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-    gbufferAttachments[1] = vkinit::attachment_info( _context->getSwapchain()->gBufferNormal().imageView, &gbufferClear,
-                                                    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-    gbufferAttachments[2] = vkinit::attachment_info(_context->getSwapchain()->gBufferAlbedo().imageView, &gbufferClear,
-                                                    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    gbufferAttachments[0] = vkinit::attachment_info(positionView, &gbufferClear, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    gbufferAttachments[1] = vkinit::attachment_info(normalView, &gbufferClear, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    gbufferAttachments[2] = vkinit::attachment_info(albedoView, &gbufferClear, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
     VkRenderingAttachmentInfo depthAttachment = vkinit::depth_attachment_info(
-         _context->getSwapchain()->depthImage().imageView, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+        depthView, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 
-    VkRenderingInfo renderInfo = vkinit::rendering_info_multi(_context->drawExtent, 3, gbufferAttachments, &depthAttachment);
+    VkRenderingInfo renderInfo = vkinit::rendering_info_multi(drawExtent, 3, gbufferAttachments, &depthAttachment);
     vkCmdBeginRendering(cmd, &renderInfo);
 
-    //allocate a new uniform buffer for the scene data
-    AllocatedBuffer gpuSceneDataBuffer = _context->resources->create_buffer(sizeof(GPUSceneData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                                                       VMA_MEMORY_USAGE_CPU_TO_GPU);
+    AllocatedBuffer gpuSceneDataBuffer = resourceManager->create_buffer(sizeof(GPUSceneData),
+                                                                        VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                                                                        VMA_MEMORY_USAGE_CPU_TO_GPU);
 
-    //add it to the deletion queue of this frame so it gets deleted once its been used
-    _context->currentFrame->_deletionQueue.push_function([=, this]() {
-        _context->resources->destroy_buffer(gpuSceneDataBuffer);
+    ctxLocal->currentFrame->_deletionQueue.push_function([resourceManager, gpuSceneDataBuffer]()
+    {
+        resourceManager->destroy_buffer(gpuSceneDataBuffer);
     });
 
-    //write the buffer
     VmaAllocationInfo allocInfo{};
-    vmaGetAllocationInfo(_context->device->allocator(), gpuSceneDataBuffer.allocation, &allocInfo);
+    vmaGetAllocationInfo(deviceManager->allocator(), gpuSceneDataBuffer.allocation, &allocInfo);
     auto *sceneUniformData = static_cast<GPUSceneData *>(allocInfo.pMappedData);
     *sceneUniformData = sceneData;
-    // Ensure visibility on non-coherent memory (e.g., discrete NVIDIA)
-    vmaFlushAllocation(_context->device->allocator(), gpuSceneDataBuffer.allocation, 0, sizeof(GPUSceneData));
+    vmaFlushAllocation(deviceManager->allocator(), gpuSceneDataBuffer.allocation, 0, sizeof(GPUSceneData));
 
-    //create a descriptor set that binds that buffer and update it
-    VkDescriptorSet globalDescriptor = _context->currentFrame->_frameDescriptors.allocate(
-        _context->device->device(), _context->getDescriptorLayouts()->gpuSceneDataLayout());
-
+    VkDescriptorSet globalDescriptor = ctxLocal->currentFrame->_frameDescriptors.allocate(
+        deviceManager->device(), descriptorLayouts->gpuSceneDataLayout());
     DescriptorWriter writer;
     writer.write_buffer(0, gpuSceneDataBuffer.buffer, sizeof(GPUSceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-    writer.update_set(_context->device->device(), globalDescriptor);
+    writer.update_set(deviceManager->device(), globalDescriptor);
 
     MaterialPipeline *lastPipeline = nullptr;
     MaterialInstance *lastMaterial = nullptr;
     VkBuffer lastIndexBuffer = VK_NULL_HANDLE;
 
-    auto draw = [&](const RenderObject &r) {
+    auto draw = [&](const RenderObject &r)
+    {
         if (r.material != lastMaterial)
         {
             lastMaterial = r.material;
@@ -160,21 +206,21 @@ void GeometryPass::draw_geometry(VkCommandBuffer cmd) const
                 vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, r.material->pipeline->layout, 0, 1,
                                         &globalDescriptor, 0, nullptr);
 
-                VkViewport viewport = {};
+                VkViewport viewport{};
                 viewport.x = 0;
                 viewport.y = 0;
-                viewport.width = static_cast<float>(_context->getDrawExtent().width);
-                viewport.height = static_cast<float>(_context->getDrawExtent().height);
+                viewport.width = static_cast<float>(drawExtent.width);
+                viewport.height = static_cast<float>(drawExtent.height);
                 viewport.minDepth = 0.f;
                 viewport.maxDepth = 1.f;
 
                 vkCmdSetViewport(cmd, 0, 1, &viewport);
 
-                VkRect2D scissor = {};
+                VkRect2D scissor{};
                 scissor.offset.x = 0;
                 scissor.offset.y = 0;
-                scissor.extent.width = _context->getDrawExtent().width;
-                scissor.extent.height = _context->getDrawExtent().height;
+                scissor.extent.width = drawExtent.width;
+                scissor.extent.height = drawExtent.height;
 
                 vkCmdSetScissor(cmd, 0, 1, &scissor);
             }
@@ -196,14 +242,17 @@ void GeometryPass::draw_geometry(VkCommandBuffer cmd) const
 
         vkCmdDrawIndexed(cmd, r.indexCount, 1, r.firstIndex, 0, 0);
 
-        _context->stats->drawcall_count++;
-        _context->stats->triangle_count += r.indexCount / 3;
+        if (ctxLocal->stats)
+        {
+            ctxLocal->stats->drawcall_count++;
+            ctxLocal->stats->triangle_count += r.indexCount / 3;
+        }
     };
 
-    if (_context->stats)
+    if (ctxLocal->stats)
     {
-        _context->stats->drawcall_count = 0;
-        _context->stats->triangle_count = 0;
+        ctxLocal->stats->drawcall_count = 0;
+        ctxLocal->stats->triangle_count = 0;
     }
 
     for (auto &r: opaque_draws)
@@ -221,9 +270,9 @@ void GeometryPass::draw_geometry(VkCommandBuffer cmd) const
     auto end = std::chrono::system_clock::now();
 
     auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-    if (_context->stats)
+    if (ctxLocal->stats)
     {
-        _context->stats->mesh_draw_time = elapsed.count() / 1000.f;
+        ctxLocal->stats->mesh_draw_time = elapsed.count() / 1000.f;
     }
 }
 

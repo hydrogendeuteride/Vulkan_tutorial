@@ -1,4 +1,4 @@
-﻿//> includes
+//> includes
 #include "vk_engine.h"
 #include <core/vk_images.h>
 
@@ -304,6 +304,12 @@ void VulkanEngine::draw()
 
         RGImageHandle hDraw = _renderGraph->import_draw_image();
         RGImageHandle hDepth = _renderGraph->import_depth_image();
+        RGImageHandle hGBufferPosition = _renderGraph->import_gbuffer_position();
+        RGImageHandle hGBufferNormal = _renderGraph->import_gbuffer_normal();
+        RGImageHandle hGBufferAlbedo = _renderGraph->import_gbuffer_albedo();
+        RGImageHandle hSwapchain = _renderGraph->import_swapchain_image(swapchainImageIndex);
+
+        ImGuiPass *imguiPass = nullptr;
 
         if (_renderPassManager)
         {
@@ -311,38 +317,32 @@ void VulkanEngine::draw()
             {
                 background->register_graph(_renderGraph.get(), hDraw, hDepth);
             }
+            if (auto *geometry = _renderPassManager->getPass<GeometryPass>())
+            {
+                geometry->register_graph(_renderGraph.get(), hGBufferPosition, hGBufferNormal, hGBufferAlbedo, hDepth);
+            }
+            if (auto *lighting = _renderPassManager->getPass<LightingPass>())
+            {
+                lighting->register_graph(_renderGraph.get(), hDraw, hGBufferPosition, hGBufferNormal, hGBufferAlbedo);
+            }
+            imguiPass = _renderPassManager->getImGuiPass();
         }
+
+        auto appendPresentExtras = [imguiPass, hSwapchain](RenderGraph &graph)
+        {
+            if (imguiPass)
+            {
+                imguiPass->register_graph(&graph, hSwapchain);
+            }
+        };
+
+        _renderGraph->add_present_chain(hDraw, hSwapchain, appendPresentExtras);
 
         if (_renderGraph->compile())
         {
             _renderGraph->execute(cmd);
         }
     }
-
-    _renderPassManager->executeAll(cmd);
-
-    //transtion the draw image and the swapchain image into their correct transfer layouts
-    vkutil::transition_image(cmd, _swapchainManager->drawImage().image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                             VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-    vkutil::transition_image(cmd, _swapchainManager->swapchainImages()[swapchainImageIndex], VK_IMAGE_LAYOUT_UNDEFINED,
-                             VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-
-    //--------------------
-    //> copyimage
-    vkutil::copy_image_to_image(cmd, _swapchainManager->drawImage().image,
-                                _swapchainManager->swapchainImages()[swapchainImageIndex], _drawExtent,
-                                _swapchainManager->swapchainExtent());
-    //< copyimage
-
-    vkutil::transition_image(cmd, _swapchainManager->swapchainImages()[swapchainImageIndex],
-                             VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-
-    _renderPassManager->executeImGui(cmd, _swapchainManager->swapchainImageViews()[swapchainImageIndex]);
-
-    vkutil::transition_image(cmd, _swapchainManager->swapchainImages()[swapchainImageIndex],
-                             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                             VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
     VK_CHECK(vkEndCommandBuffer(cmd));
 
@@ -513,3 +513,4 @@ void MeshNode::Draw(const glm::mat4 &topMatrix, DrawContext &ctx)
     // recurse down
     Node::Draw(topMatrix, ctx);
 }
+

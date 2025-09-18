@@ -46,6 +46,9 @@ public:
     RGImageHandle import_gbuffer_normal();
     RGImageHandle import_gbuffer_albedo();
     RGImageHandle import_swapchain_image(uint32_t index);
+    void add_present_chain(RGImageHandle sourceDraw,
+                           RGImageHandle targetSwapchain,
+                           std::function<void(RenderGraph&)> appendExtra = {});
 
 private:
     struct ImportedImage
@@ -74,3 +77,4 @@ private:
     RGResourceRegistry _resources;
     std::vector<Pass> _passes;
 };
+

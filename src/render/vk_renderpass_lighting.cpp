@@ -4,7 +4,6 @@
 #include "vk_descriptor_manager.h"
 #include "vk_device.h"
 #include "core/engine_context.h"
-#include "core/vk_images.h"
 #include "core/vk_initializers.h"
 #include "core/vk_resource.h"
 #include "render/vk_pipelines.h"
@@ -15,6 +14,7 @@
 #include "vk_mem_alloc.h"
 #include "vk_sampler_manager.h"
 #include "vk_swapchain.h"
+#include "render/rg_graph.h"
 
 void LightingPass::init(EngineContext *context)
 {
@@ -76,54 +76,83 @@ void LightingPass::init(EngineContext *context)
     });
 }
 
-void LightingPass::execute(VkCommandBuffer cmd)
+void LightingPass::execute(VkCommandBuffer)
 {
-    vkutil::transition_image(cmd, _context->getSwapchain()->gBufferPosition().image,
-                             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                             VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-    vkutil::transition_image(cmd, _context->getSwapchain()->gBufferNormal().image,
-                             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                             VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-    vkutil::transition_image(cmd, _context->getSwapchain()->gBufferAlbedo().image,
-                             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                             VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-    vkutil::transition_image(cmd, _context->getSwapchain()->drawImage().image,
-                             VK_IMAGE_LAYOUT_GENERAL,
-                             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-
-    draw_lighting(cmd);
+    // Lighting is executed via the render graph now.
 }
 
-void LightingPass::draw_lighting(VkCommandBuffer cmd)
+void LightingPass::register_graph(RenderGraph *graph,
+                                  RGImageHandle drawHandle,
+                                  RGImageHandle gbufferPosition,
+                                  RGImageHandle gbufferNormal,
+                                  RGImageHandle gbufferAlbedo)
 {
+    if (!graph || !drawHandle.valid() || !gbufferPosition.valid() || !gbufferNormal.valid() || !gbufferAlbedo.valid())
+    {
+        return;
+    }
+
+    graph->add_pass(
+        "Lighting",
+        RGPassType::Graphics,
+        [drawHandle, gbufferPosition, gbufferNormal, gbufferAlbedo](RGPassBuilder &builder, EngineContext *)
+        {
+            builder.read(gbufferPosition, RGImageUsage::SampledFragment);
+            builder.read(gbufferNormal, RGImageUsage::SampledFragment);
+            builder.read(gbufferAlbedo, RGImageUsage::SampledFragment);
+
+            builder.write_color(drawHandle);
+        },
+        [this, drawHandle](VkCommandBuffer cmd, const RGPassResources &res, EngineContext *ctx)
+        {
+            draw_lighting(cmd, ctx, res, drawHandle);
+        });
+}
+
+void LightingPass::draw_lighting(VkCommandBuffer cmd,
+                                 EngineContext *context,
+                                 const RGPassResources &resources,
+                                 RGImageHandle drawHandle)
+{
+    EngineContext *ctxLocal = context ? context : _context;
+    if (!ctxLocal || !ctxLocal->currentFrame) return;
+
+    ResourceManager *resourceManager = ctxLocal->getResources();
+    DeviceManager *deviceManager = ctxLocal->getDevice();
+    DescriptorManager *descriptorLayouts = ctxLocal->getDescriptorLayouts();
+    PipelineManager *pipelineManager = ctxLocal->pipelines;
+    if (!resourceManager || !deviceManager || !descriptorLayouts || !pipelineManager) return;
+
+    VkImageView drawView = resources.image_view(drawHandle);
+    if (drawView == VK_NULL_HANDLE) return;
+
     // Re-fetch pipeline in case it was hot-reloaded
-    _context->pipelines->getGraphics("deferred_lighting", _pipeline, _pipelineLayout);
+    pipelineManager->getGraphics("deferred_lighting", _pipeline, _pipelineLayout);
 
     VkRenderingAttachmentInfo colorAttachment = vkinit::attachment_info(
-        _context->getSwapchain()->drawImage().imageView, nullptr,
-        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-    VkRenderingInfo renderInfo = vkinit::rendering_info(_context->getDrawExtent(), &colorAttachment, nullptr);
+        drawView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    VkRenderingInfo renderInfo = vkinit::rendering_info(ctxLocal->getDrawExtent(), &colorAttachment, nullptr);
     vkCmdBeginRendering(cmd, &renderInfo);
 
-    AllocatedBuffer gpuSceneDataBuffer = _context->getResources()->create_buffer(
+    AllocatedBuffer gpuSceneDataBuffer = resourceManager->create_buffer(
         sizeof(GPUSceneData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
         VMA_MEMORY_USAGE_CPU_TO_GPU);
-    _context->currentFrame->_deletionQueue.push_function([=, this]() {
-        _context->getResources()->destroy_buffer(gpuSceneDataBuffer);
+    ctxLocal->currentFrame->_deletionQueue.push_function([resourceManager, gpuSceneDataBuffer]()
+    {
+        resourceManager->destroy_buffer(gpuSceneDataBuffer);
     });
 
     VmaAllocationInfo allocInfo{};
-    vmaGetAllocationInfo(_context->getDevice()->allocator(), gpuSceneDataBuffer.allocation, &allocInfo);
+    vmaGetAllocationInfo(deviceManager->allocator(), gpuSceneDataBuffer.allocation, &allocInfo);
     auto *sceneUniformData = static_cast<GPUSceneData *>(allocInfo.pMappedData);
-    *sceneUniformData = _context->getSceneData();
-    // Ensure visibility on non-coherent memory (e.g., discrete NVIDIA)
-    vmaFlushAllocation(_context->getDevice()->allocator(), gpuSceneDataBuffer.allocation, 0, sizeof(GPUSceneData));
+    *sceneUniformData = ctxLocal->getSceneData();
+    vmaFlushAllocation(deviceManager->allocator(), gpuSceneDataBuffer.allocation, 0, sizeof(GPUSceneData));
 
-    VkDescriptorSet globalDescriptor = _context->currentFrame->_frameDescriptors.allocate(
-        _context->getDevice()->device(), _context->getDescriptorLayouts()->gpuSceneDataLayout());
+    VkDescriptorSet globalDescriptor = ctxLocal->currentFrame->_frameDescriptors.allocate(
+        deviceManager->device(), descriptorLayouts->gpuSceneDataLayout());
     DescriptorWriter writer;
     writer.write_buffer(0, gpuSceneDataBuffer.buffer, sizeof(GPUSceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-    writer.update_set(_context->getDevice()->device(), globalDescriptor);
+    writer.update_set(deviceManager->device(), globalDescriptor);
 
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline);
     vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 0, 1, &globalDescriptor, 0,
@@ -134,15 +163,15 @@ void LightingPass::draw_lighting(VkCommandBuffer cmd)
     VkViewport viewport{};
     viewport.x = 0;
     viewport.y = 0;
-    viewport.width = static_cast<float>(_context->getDrawExtent().width);
-    viewport.height = static_cast<float>(_context->getDrawExtent().height);
+    viewport.width = static_cast<float>(ctxLocal->getDrawExtent().width);
+    viewport.height = static_cast<float>(ctxLocal->getDrawExtent().height);
     viewport.minDepth = 0.f;
     viewport.maxDepth = 1.f;
     vkCmdSetViewport(cmd, 0, 1, &viewport);
 
     VkRect2D scissor{};
     scissor.offset = {0, 0};
-    scissor.extent = {_context->getDrawExtent().width, _context->getDrawExtent().height};
+    scissor.extent = {ctxLocal->getDrawExtent().width, ctxLocal->getDrawExtent().height};
     vkCmdSetScissor(cmd, 0, 1, &scissor);
 
     vkCmdDraw(cmd, 3, 1, 0, 0);
