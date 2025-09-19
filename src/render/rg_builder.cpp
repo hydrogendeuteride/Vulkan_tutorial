@@ -4,45 +4,60 @@
 // ---- RGPassResources ----
 VkImage RGPassResources::image(RGImageHandle h) const
 {
-    const RGImageRecord *rec = _registry ? _registry->get_image(h) : nullptr;
-    return rec ? rec->image : VK_NULL_HANDLE;
+	const RGImageRecord *rec = _registry ? _registry->get_image(h) : nullptr;
+	return rec ? rec->image : VK_NULL_HANDLE;
 }
 
 VkImageView RGPassResources::image_view(RGImageHandle h) const
 {
-    const RGImageRecord *rec = _registry ? _registry->get_image(h) : nullptr;
-    return rec ? rec->imageView : VK_NULL_HANDLE;
+	const RGImageRecord *rec = _registry ? _registry->get_image(h) : nullptr;
+	return rec ? rec->imageView : VK_NULL_HANDLE;
+}
+
+VkBuffer RGPassResources::buffer(RGBufferHandle h) const
+{
+	const RGBufferRecord *rec = _registry ? _registry->get_buffer(h) : nullptr;
+	return rec ? rec->buffer : VK_NULL_HANDLE;
 }
 
 // ---- RGPassBuilder ----
 void RGPassBuilder::read(RGImageHandle h, RGImageUsage usage)
 {
-    _reads.push_back({h, usage});
+	_imageReads.push_back({h, usage});
 }
 
 void RGPassBuilder::write(RGImageHandle h, RGImageUsage usage)
 {
-    _writes.push_back({h, usage});
+	_imageWrites.push_back({h, usage});
+}
+
+void RGPassBuilder::read_buffer(RGBufferHandle h, RGBufferUsage usage)
+{
+	_bufferReads.push_back({h, usage});
+}
+
+void RGPassBuilder::write_buffer(RGBufferHandle h, RGBufferUsage usage)
+{
+	_bufferWrites.push_back({h, usage});
 }
 
 void RGPassBuilder::write_color(RGImageHandle h, bool clearOnLoad, VkClearValue clear)
 {
-    RGAttachmentInfo a{};
-    a.image = h;
-    a.clearOnLoad = clearOnLoad;
-    a.clear = clear;
-    a.store = true;
-    _colors.push_back(a);
-    write(h, RGImageUsage::ColorAttachment);
+	RGAttachmentInfo a{};
+	a.image = h;
+	a.clearOnLoad = clearOnLoad;
+	a.clear = clear;
+	a.store = true;
+	_colors.push_back(a);
+	write(h, RGImageUsage::ColorAttachment);
 }
 
 void RGPassBuilder::write_depth(RGImageHandle h, bool clearOnLoad, VkClearValue clear)
 {
-    if (_depthRef == nullptr) _depthRef = &_depthTemp;
-    _depthRef->image = h;
-    _depthRef->clearOnLoad = clearOnLoad;
-    _depthRef->clear = clear;
-    _depthRef->store = true;
-    write(h, RGImageUsage::DepthAttachment);
+	if (_depthRef == nullptr) _depthRef = &_depthTemp;
+	_depthRef->image = h;
+	_depthRef->clearOnLoad = clearOnLoad;
+	_depthRef->clear = clear;
+	_depthRef->store = true;
+	write(h, RGImageUsage::DepthAttachment);
 }
-

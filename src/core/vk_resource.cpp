@@ -4,6 +4,16 @@
 #include "vk_initializers.h"
 
 #include "vk_mem_alloc.h"
+#include <render/rg_graph.h>
+#include <render/rg_builder.h>
+#include <render/rg_resources.h>
+
+#include "frame_resources.h"
+
+#include <memory>
+#include <string>
+#include <unordered_map>
+#include <utility>
 
 void ResourceManager::init(DeviceManager *deviceManager)
 {
@@ -75,6 +85,7 @@ void ResourceManager::destroy_buffer(const AllocatedBuffer &buffer) const
 void ResourceManager::cleanup()
 {
     fmt::print("ResourceManager::cleanup()\n");
+    clear_pending_uploads();
     _deletionQueue.flush();
 }
 
@@ -120,7 +131,7 @@ AllocatedImage ResourceManager::create_image(VkExtent3D size, VkFormat format, V
 
 AllocatedImage ResourceManager::create_image(const void *data, VkExtent3D size, VkFormat format,
                                              VkImageUsageFlags usage,
-                                             bool mipmapped) const
+                                             bool mipmapped)
 {
     size_t data_size = size.depth * size.width * size.height * 4;
     AllocatedBuffer uploadbuffer = create_buffer(data_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
@@ -134,39 +145,21 @@ AllocatedImage ResourceManager::create_image(const void *data, VkExtent3D size, 
                                             usage | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
                                             mipmapped);
 
-    immediate_submit([&](VkCommandBuffer cmd) {
-        // Make the whole image writable by transfer before upload
-        vkutil::transition_image(cmd, new_image.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    PendingImageUpload pending{};
+    pending.staging = uploadbuffer;
+    pending.image = new_image.image;
+    pending.extent = size;
+    pending.format = format;
+    pending.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    pending.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    pending.generateMips = mipmapped;
 
-        VkBufferImageCopy copyRegion = {};
-        copyRegion.bufferOffset = 0;
-        copyRegion.bufferRowLength = 0;
-        copyRegion.bufferImageHeight = 0;
+    _pendingImageUploads.push_back(std::move(pending));
 
-        copyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        copyRegion.imageSubresource.mipLevel = 0;
-        copyRegion.imageSubresource.baseArrayLayer = 0;
-        copyRegion.imageSubresource.layerCount = 1;
-        copyRegion.imageExtent = size;
-
-        // copy the buffer into the base mip
-        vkCmdCopyBufferToImage(cmd, uploadbuffer.buffer, new_image.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1,
-                               &copyRegion);
-
-        if (mipmapped)
-        {
-            // Generate all mip levels and transition to SHADER_READ_ONLY
-            vkutil::generate_mipmaps(cmd, new_image.image, VkExtent2D{size.width, size.height});
-        }
-        else
-        {
-            // Transition directly to shader read for non-mipmapped textures
-            vkutil::transition_image(cmd, new_image.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                                     VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-        }
-    });
-
-    destroy_buffer(uploadbuffer);
+    if (!_deferUploads)
+    {
+        process_queued_uploads_immediate();
+    }
 
     return new_image;
 }
@@ -177,7 +170,7 @@ void ResourceManager::destroy_image(const AllocatedImage &img) const
     vmaDestroyImage(_deviceManager->allocator(), img.image, img.allocation);
 }
 
-GPUMeshBuffers ResourceManager::uploadMesh(std::span<uint32_t> indices, std::span<Vertex> vertices) const
+GPUMeshBuffers ResourceManager::uploadMesh(std::span<uint32_t> indices, std::span<Vertex> vertices)
 {
     const size_t vertexBufferSize = vertices.size() * sizeof(Vertex);
     const size_t indexBufferSize = indices.size() * sizeof(uint32_t);
@@ -214,23 +207,280 @@ GPUMeshBuffers ResourceManager::uploadMesh(std::span<uint32_t> indices, std::spa
     // Ensure visibility on non-coherent memory before GPU copies
     vmaFlushAllocation(_deviceManager->allocator(), staging.allocation, 0, vertexBufferSize + indexBufferSize);
 
-    immediate_submit([&](VkCommandBuffer cmd) {
-        VkBufferCopy vertexCopy{0};
-        vertexCopy.dstOffset = 0;
-        vertexCopy.srcOffset = 0;
-        vertexCopy.size = vertexBufferSize;
-
-        vkCmdCopyBuffer(cmd, staging.buffer, newSurface.vertexBuffer.buffer, 1, &vertexCopy);
-
-        VkBufferCopy indexCopy{0};
-        indexCopy.dstOffset = 0;
-        indexCopy.srcOffset = vertexBufferSize;
-        indexCopy.size = indexBufferSize;
-
-        vkCmdCopyBuffer(cmd, staging.buffer, newSurface.indexBuffer.buffer, 1, &indexCopy);
+    PendingBufferUpload pending{};
+    pending.staging = staging;
+    pending.copies.push_back(BufferCopyRegion{
+        .destination = newSurface.vertexBuffer.buffer,
+        .dstOffset = 0,
+        .size = vertexBufferSize,
+        .stagingOffset = 0,
+    });
+    pending.copies.push_back(BufferCopyRegion{
+        .destination = newSurface.indexBuffer.buffer,
+        .dstOffset = 0,
+        .size = indexBufferSize,
+        .stagingOffset = vertexBufferSize,
     });
 
-    destroy_buffer(staging);
+    _pendingBufferUploads.push_back(std::move(pending));
+
+    if (!_deferUploads)
+    {
+        process_queued_uploads_immediate();
+    }
 
     return newSurface;
+}
+
+bool ResourceManager::has_pending_uploads() const
+{
+    return !_pendingBufferUploads.empty() || !_pendingImageUploads.empty();
+}
+
+void ResourceManager::clear_pending_uploads()
+{
+    for (auto &upload : _pendingBufferUploads)
+    {
+        destroy_buffer(upload.staging);
+    }
+    for (auto &upload : _pendingImageUploads)
+    {
+        destroy_buffer(upload.staging);
+    }
+    _pendingBufferUploads.clear();
+    _pendingImageUploads.clear();
+}
+
+void ResourceManager::process_queued_uploads_immediate()
+{
+    if (!has_pending_uploads()) return;
+
+    immediate_submit([&](VkCommandBuffer cmd) {
+        for (auto &bufferUpload : _pendingBufferUploads)
+        {
+            for (const auto &copy : bufferUpload.copies)
+            {
+                VkBufferCopy region{};
+                region.srcOffset = copy.stagingOffset;
+                region.dstOffset = copy.dstOffset;
+                region.size = copy.size;
+                vkCmdCopyBuffer(cmd, bufferUpload.staging.buffer, copy.destination, 1, &region);
+            }
+        }
+
+        for (auto &imageUpload : _pendingImageUploads)
+        {
+            vkutil::transition_image(cmd, imageUpload.image, imageUpload.initialLayout,
+                                     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+            VkBufferImageCopy copyRegion = {};
+            copyRegion.bufferOffset = 0;
+            copyRegion.bufferRowLength = 0;
+            copyRegion.bufferImageHeight = 0;
+            copyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            copyRegion.imageSubresource.mipLevel = 0;
+            copyRegion.imageSubresource.baseArrayLayer = 0;
+            copyRegion.imageSubresource.layerCount = 1;
+            copyRegion.imageExtent = imageUpload.extent;
+
+            vkCmdCopyBufferToImage(cmd,
+                                   imageUpload.staging.buffer,
+                                   imageUpload.image,
+                                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                   1,
+                                   &copyRegion);
+
+            if (imageUpload.generateMips)
+            {
+                vkutil::generate_mipmaps(cmd, imageUpload.image,
+                                         VkExtent2D{imageUpload.extent.width, imageUpload.extent.height});
+            }
+            else
+            {
+                vkutil::transition_image(cmd, imageUpload.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                         imageUpload.finalLayout);
+            }
+        }
+    });
+
+    clear_pending_uploads();
+}
+
+void ResourceManager::register_upload_pass(RenderGraph &graph, FrameResources &frame)
+{
+    if (_pendingBufferUploads.empty() && _pendingImageUploads.empty()) return;
+
+    auto bufferUploads = std::make_shared<std::vector<PendingBufferUpload>>(std::move(_pendingBufferUploads));
+    auto imageUploads = std::make_shared<std::vector<PendingImageUpload>>(std::move(_pendingImageUploads));
+
+    struct BufferBinding
+    {
+        size_t uploadIndex{};
+        RGBufferHandle stagingHandle{};
+        std::vector<RGBufferHandle> destinationHandles;
+    };
+
+    struct ImageBinding
+    {
+        size_t uploadIndex{};
+        RGBufferHandle stagingHandle{};
+        RGImageHandle imageHandle{};
+    };
+
+    auto bufferBindings = std::make_shared<std::vector<BufferBinding>>();
+    auto imageBindings = std::make_shared<std::vector<ImageBinding>>();
+
+    bufferBindings->reserve(bufferUploads->size());
+    imageBindings->reserve(imageUploads->size());
+
+    std::unordered_map<VkBuffer, RGBufferHandle> destBufferHandles;
+    std::unordered_map<VkImage, RGImageHandle> imageHandles;
+
+    for (size_t i = 0; i < bufferUploads->size(); ++i)
+    {
+        const auto &upload = bufferUploads->at(i);
+        BufferBinding binding{};
+        binding.uploadIndex = i;
+
+        RGImportedBufferDesc stagingDesc{};
+        stagingDesc.name = std::string("upload.staging.buffer.") + std::to_string(i);
+        stagingDesc.buffer = upload.staging.buffer;
+        stagingDesc.size = upload.staging.info.size;
+        stagingDesc.currentStage = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT;
+        stagingDesc.currentAccess = 0;
+        binding.stagingHandle = graph.import_buffer(stagingDesc);
+
+        binding.destinationHandles.reserve(upload.copies.size());
+        for (const auto &copy : upload.copies)
+        {
+            RGBufferHandle handle{};
+            auto it = destBufferHandles.find(copy.destination);
+            if (it == destBufferHandles.end())
+            {
+                RGImportedBufferDesc dstDesc{};
+                dstDesc.name = std::string("upload.dst.buffer.") + std::to_string(destBufferHandles.size());
+                dstDesc.buffer = copy.destination;
+                dstDesc.size = copy.dstOffset + copy.size;
+                dstDesc.currentStage = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT;
+                dstDesc.currentAccess = 0;
+                handle = graph.import_buffer(dstDesc);
+                destBufferHandles.emplace(copy.destination, handle);
+            }
+            else
+            {
+                handle = it->second;
+            }
+            binding.destinationHandles.push_back(handle);
+        }
+
+        bufferBindings->push_back(std::move(binding));
+    }
+
+    for (size_t i = 0; i < imageUploads->size(); ++i)
+    {
+        const auto &upload = imageUploads->at(i);
+        ImageBinding binding{};
+        binding.uploadIndex = i;
+
+        RGImportedBufferDesc stagingDesc{};
+        stagingDesc.name = std::string("upload.staging.image.") + std::to_string(i);
+        stagingDesc.buffer = upload.staging.buffer;
+        stagingDesc.size = upload.staging.info.size;
+        stagingDesc.currentStage = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT;
+        stagingDesc.currentAccess = 0;
+        binding.stagingHandle = graph.import_buffer(stagingDesc);
+
+        auto it = imageHandles.find(upload.image);
+        if (it == imageHandles.end())
+        {
+            RGImportedImageDesc imgDesc{};
+            imgDesc.name = std::string("upload.image.") + std::to_string(imageHandles.size());
+            imgDesc.image = upload.image;
+            imgDesc.imageView = VK_NULL_HANDLE;
+            imgDesc.format = upload.format;
+            imgDesc.extent = {upload.extent.width, upload.extent.height};
+            imgDesc.currentLayout = upload.initialLayout;
+            binding.imageHandle = graph.import_image(imgDesc);
+            imageHandles.emplace(upload.image, binding.imageHandle);
+        }
+        else
+        {
+            binding.imageHandle = it->second;
+        }
+
+        imageBindings->push_back(std::move(binding));
+    }
+
+    graph.add_pass("ResourceUploads", RGPassType::Transfer,
+        [bufferBindings, imageBindings](RGPassBuilder &builder, EngineContext *)
+        {
+            for (const auto &binding : *bufferBindings)
+            {
+                builder.read_buffer(binding.stagingHandle, RGBufferUsage::TransferSrc);
+                for (auto handle : binding.destinationHandles)
+                {
+                    builder.write_buffer(handle, RGBufferUsage::TransferDst);
+                }
+            }
+            for (const auto &binding : *imageBindings)
+            {
+                builder.read_buffer(binding.stagingHandle, RGBufferUsage::TransferSrc);
+                builder.write(binding.imageHandle, RGImageUsage::TransferDst);
+            }
+        },
+        [bufferUploads, imageUploads, bufferBindings, imageBindings, this](VkCommandBuffer cmd, const RGPassResources &res, EngineContext *)
+        {
+            for (const auto &binding : *bufferBindings)
+            {
+                const auto &upload = bufferUploads->at(binding.uploadIndex);
+                VkBuffer staging = res.buffer(binding.stagingHandle);
+                for (size_t copyIndex = 0; copyIndex < upload.copies.size(); ++copyIndex)
+                {
+                    const auto &copy = upload.copies[copyIndex];
+                    VkBuffer destination = res.buffer(binding.destinationHandles[copyIndex]);
+                    VkBufferCopy region{};
+                    region.srcOffset = copy.stagingOffset;
+                    region.dstOffset = copy.dstOffset;
+                    region.size = copy.size;
+                    vkCmdCopyBuffer(cmd, staging, destination, 1, &region);
+                }
+            }
+
+            for (const auto &binding : *imageBindings)
+            {
+                const auto &upload = imageUploads->at(binding.uploadIndex);
+                VkBuffer staging = res.buffer(binding.stagingHandle);
+                VkImage image = res.image(binding.imageHandle);
+
+                VkBufferImageCopy region{};
+                region.bufferOffset = 0;
+                region.bufferRowLength = 0;
+                region.bufferImageHeight = 0;
+                region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+                region.imageSubresource.mipLevel = 0;
+                region.imageSubresource.baseArrayLayer = 0;
+                region.imageSubresource.layerCount = 1;
+                region.imageExtent = upload.extent;
+
+                vkCmdCopyBufferToImage(cmd, staging, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+
+                if (upload.generateMips)
+                {
+                    vkutil::generate_mipmaps(cmd, image, VkExtent2D{upload.extent.width, upload.extent.height});
+                    vkutil::transition_image(cmd, image, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+                }
+            }
+        });
+
+    frame._deletionQueue.push_function([buffers = bufferUploads, images = imageUploads, this]()
+    {
+        for (const auto &upload : *buffers)
+        {
+            destroy_buffer(upload.staging);
+        }
+        for (const auto &upload : *images)
+        {
+            destroy_buffer(upload.staging);
+        }
+    });
 }

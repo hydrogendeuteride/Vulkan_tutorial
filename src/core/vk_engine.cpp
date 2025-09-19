@@ -127,6 +127,8 @@ void VulkanEngine::init()
 
     _sceneManager->loadScene("structure", *structureFile);
 
+    _resourceManager->set_deferred_uploads(true);
+
     //everything went fine
     _isInitialized = true;
 }
@@ -308,6 +310,8 @@ void VulkanEngine::draw()
         RGImageHandle hGBufferNormal = _renderGraph->import_gbuffer_normal();
         RGImageHandle hGBufferAlbedo = _renderGraph->import_gbuffer_albedo();
         RGImageHandle hSwapchain = _renderGraph->import_swapchain_image(swapchainImageIndex);
+
+        _resourceManager->register_upload_pass(*_renderGraph, get_current_frame());
 
         ImGuiPass *imguiPass = nullptr;
 
