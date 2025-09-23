@@ -40,8 +40,8 @@ struct Pass; // fwd
 	// Build internal state for this frame (no-op in v1)
 	bool compile();
 
-	// Execute in insertion order (no barriers yet)
-	void execute(VkCommandBuffer cmd);
+    // Execute in insertion order (no barriers yet)
+    void execute(VkCommandBuffer cmd);
 
 	// Convenience import helpers (read from EngineContext::swapchain)
 	RGImageHandle import_draw_image();
@@ -61,11 +61,11 @@ private:
 		RGImageHandle handle;
 	};
 
-	struct Pass
-	{
-		std::string name;
-		RGPassType type{};
-		RecordCallback record;
+    struct Pass
+    {
+        std::string name;
+        RGPassType type{};
+        RecordCallback record;
 
 		// Declarations
 		std::vector<RGPassImageAccess> imageReads;
@@ -76,9 +76,13 @@ private:
 		bool hasDepth = false;
 		RGAttachmentInfo depthAttachment{};
 
-		std::vector<VkImageMemoryBarrier2> preImageBarriers;
-		std::vector<VkBufferMemoryBarrier2> preBufferBarriers;
-	};
+        std::vector<VkImageMemoryBarrier2> preImageBarriers;
+        std::vector<VkBufferMemoryBarrier2> preBufferBarriers;
+
+        // Cached rendering info derived from declared attachments (filled at execute)
+        bool hasRendering = false;
+        VkExtent2D renderExtent{};
+    };
 
 	EngineContext* _context = nullptr;
 	RGResourceRegistry _resources;

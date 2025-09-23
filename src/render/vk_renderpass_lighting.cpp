@@ -129,10 +129,7 @@ void LightingPass::draw_lighting(VkCommandBuffer cmd,
     // Re-fetch pipeline in case it was hot-reloaded
     pipelineManager->getGraphics("deferred_lighting", _pipeline, _pipelineLayout);
 
-    VkRenderingAttachmentInfo colorAttachment = vkinit::attachment_info(
-        drawView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-    VkRenderingInfo renderInfo = vkinit::rendering_info(ctxLocal->getDrawExtent(), &colorAttachment, nullptr);
-    vkCmdBeginRendering(cmd, &renderInfo);
+    // Dynamic rendering is handled by the RenderGraph using the declared draw attachment.
 
     AllocatedBuffer gpuSceneDataBuffer = resourceManager->create_buffer(
         sizeof(GPUSceneData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
@@ -176,7 +173,7 @@ void LightingPass::draw_lighting(VkCommandBuffer cmd,
 
     vkCmdDraw(cmd, 3, 1, 0, 0);
 
-    vkCmdEndRendering(cmd);
+    // RenderGraph ends rendering.
 }
 
 void LightingPass::cleanup()

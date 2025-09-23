@@ -1,6 +1,7 @@
 #include "vk_renderpass_geometry.h"
 
 #include <chrono>
+#include <unordered_set>
 
 #include "frame_resources.h"
 #include "vk_descriptor_manager.h"
@@ -78,7 +79,7 @@ void GeometryPass::register_graph(RenderGraph *graph,
     graph->add_pass(
         "Geometry",
         RGPassType::Graphics,
-        [gbufferPosition, gbufferNormal, gbufferAlbedo, depthHandle](RGPassBuilder &builder, EngineContext *)
+        [gbufferPosition, gbufferNormal, gbufferAlbedo, depthHandle](RGPassBuilder &builder, EngineContext *ctx)
         {
             VkClearValue clear{};
             clear.color = {{0.f, 0.f, 0.f, 0.f}};
@@ -87,9 +88,35 @@ void GeometryPass::register_graph(RenderGraph *graph,
             builder.write_color(gbufferNormal, true, clear);
             builder.write_color(gbufferAlbedo, true, clear);
 
+            // Reverse-Z: clear depth to 0.0
             VkClearValue depthClear{};
-            depthClear.depthStencil = {1.f, 0};
+            depthClear.depthStencil = {0.f, 0};
             builder.write_depth(depthHandle, true, depthClear);
+
+            // Register read buffers used by all draw calls (index + vertex SSBO)
+            if (ctx)
+            {
+                const DrawContext &dc = ctx->getMainDrawContext();
+                // Collect unique buffers to avoid duplicates
+                std::unordered_set<VkBuffer> indexSet;
+                std::unordered_set<VkBuffer> vertexSet;
+                indexSet.reserve(dc.OpaqueSurfaces.size() + dc.TransparentSurfaces.size());
+                vertexSet.reserve(dc.OpaqueSurfaces.size() + dc.TransparentSurfaces.size());
+                auto collect = [&](const std::vector<RenderObject>& v){
+                    for (const auto &r : v)
+                    {
+                        if (r.indexBuffer) indexSet.insert(r.indexBuffer);
+                        if (r.vertexBuffer) vertexSet.insert(r.vertexBuffer);
+                    }
+                };
+                collect(dc.OpaqueSurfaces);
+                collect(dc.TransparentSurfaces);
+
+                for (VkBuffer b : indexSet)
+                    builder.read_buffer(b, RGBufferUsage::IndexRead, 0, "geom.index");
+                for (VkBuffer b : vertexSet)
+                    builder.read_buffer(b, RGBufferUsage::StorageRead, 0, "geom.vertex");
+            }
         },
         [this, gbufferPosition, gbufferNormal, gbufferAlbedo, depthHandle](VkCommandBuffer cmd,
                                                                            const RGPassResources &res,
@@ -156,18 +183,7 @@ void GeometryPass::draw_geometry(VkCommandBuffer cmd,
         return A.material < B.material;
     });
 
-    VkRenderingAttachmentInfo gbufferAttachments[3];
-    VkClearValue gbufferClear{};
-    gbufferClear.color = {{0.f, 0.f, 0.f, 0.f}};
-    gbufferAttachments[0] = vkinit::attachment_info(positionView, &gbufferClear, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-    gbufferAttachments[1] = vkinit::attachment_info(normalView, &gbufferClear, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-    gbufferAttachments[2] = vkinit::attachment_info(albedoView, &gbufferClear, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-
-    VkRenderingAttachmentInfo depthAttachment = vkinit::depth_attachment_info(
-        depthView, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
-
-    VkRenderingInfo renderInfo = vkinit::rendering_info_multi(drawExtent, 3, gbufferAttachments, &depthAttachment);
-    vkCmdBeginRendering(cmd, &renderInfo);
+    // Dynamic rendering is now begun by the RenderGraph using the declared attachments.
 
     AllocatedBuffer gpuSceneDataBuffer = resourceManager->create_buffer(sizeof(GPUSceneData),
                                                                         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
@@ -265,7 +281,7 @@ void GeometryPass::draw_geometry(VkCommandBuffer cmd,
         draw(r);
     }
 
-    vkCmdEndRendering(cmd);
+    // RenderGraph will end dynamic rendering for this pass.
 
     auto end = std::chrono::system_clock::now();
 

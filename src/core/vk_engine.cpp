@@ -499,6 +499,7 @@ void MeshNode::Draw(const glm::mat4 &topMatrix, DrawContext &ctx)
         def.indexCount = s.count;
         def.firstIndex = s.startIndex;
         def.indexBuffer = mesh->meshBuffers.indexBuffer.buffer;
+        def.vertexBuffer = mesh->meshBuffers.vertexBuffer.buffer;
         def.material = &s.material->data;
 
         def.transform = nodeMatrix;

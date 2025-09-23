@@ -12,6 +12,7 @@ struct RenderObject
     uint32_t indexCount;
     uint32_t firstIndex;
     VkBuffer indexBuffer;
+    VkBuffer vertexBuffer; // for RG buffer tracking (device-address path still used in shader)
 
     MaterialInstance *material;
     Bounds bounds;

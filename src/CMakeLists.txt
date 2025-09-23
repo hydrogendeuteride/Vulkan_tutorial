@@ -8,6 +8,8 @@ add_executable (engine
   core/vk_initializers.h
   core/vk_images.h
   core/vk_images.cpp 
+  core/vk_debug.h
+  core/vk_debug.cpp
   core/vk_descriptors.h
   core/vk_descriptors.cpp
   core/vk_device.h

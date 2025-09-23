@@ -108,12 +108,6 @@ void ImGuiPass::draw_imgui(VkCommandBuffer cmd,
     VkImageView targetImageView = resources.image_view(targetHandle);
     if (targetImageView == VK_NULL_HANDLE) return;
 
-    VkRenderingAttachmentInfo colorAttachment = vkinit::attachment_info(
-        targetImageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-    VkRenderingInfo renderInfo = vkinit::rendering_info(
-        ctxLocal->getSwapchain()->swapchainExtent(), &colorAttachment, nullptr);
-
-    vkCmdBeginRendering(cmd, &renderInfo);
+    // Dynamic rendering is handled by the RenderGraph; just render draw data.
     ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmd);
-    vkCmdEndRendering(cmd);
 }

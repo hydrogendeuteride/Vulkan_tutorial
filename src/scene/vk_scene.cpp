@@ -57,6 +57,7 @@ void SceneManager::update_scene()
             obj.indexCount = surf.count;
             obj.firstIndex = surf.startIndex;
             obj.indexBuffer = inst.mesh->meshBuffers.indexBuffer.buffer;
+            obj.vertexBuffer = inst.mesh->meshBuffers.vertexBuffer.buffer;
             obj.vertexBufferAddress = inst.mesh->meshBuffers.vertexBufferAddress;
             obj.material = &surf.material->data;
             obj.bounds = surf.bounds;

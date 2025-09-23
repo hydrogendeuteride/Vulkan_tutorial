@@ -38,14 +38,49 @@ void RGPassBuilder::read_buffer(RGBufferHandle h, RGBufferUsage usage)
 
 void RGPassBuilder::write_buffer(RGBufferHandle h, RGBufferUsage usage)
 {
-	_bufferWrites.push_back({h, usage});
+    _bufferWrites.push_back({h, usage});
+}
+
+void RGPassBuilder::read_buffer(VkBuffer buffer, RGBufferUsage usage, VkDeviceSize size, const char* name)
+{
+    if (!_registry || buffer == VK_NULL_HANDLE) return;
+    // Dedup/import
+    RGBufferHandle h = _registry->find_buffer(buffer);
+    if (!h.valid())
+    {
+        RGImportedBufferDesc d{};
+        d.name = name ? name : "external.buffer";
+        d.buffer = buffer;
+        d.size = size;
+        d.currentStage = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT;
+        d.currentAccess = 0;
+        h = _registry->add_imported(d);
+    }
+    read_buffer(h, usage);
+}
+
+void RGPassBuilder::write_buffer(VkBuffer buffer, RGBufferUsage usage, VkDeviceSize size, const char* name)
+{
+    if (!_registry || buffer == VK_NULL_HANDLE) return;
+    RGBufferHandle h = _registry->find_buffer(buffer);
+    if (!h.valid())
+    {
+        RGImportedBufferDesc d{};
+        d.name = name ? name : "external.buffer";
+        d.buffer = buffer;
+        d.size = size;
+        d.currentStage = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT;
+        d.currentAccess = 0;
+        h = _registry->add_imported(d);
+    }
+    write_buffer(h, usage);
 }
 
 void RGPassBuilder::write_color(RGImageHandle h, bool clearOnLoad, VkClearValue clear)
 {
-	RGAttachmentInfo a{};
-	a.image = h;
-	a.clearOnLoad = clearOnLoad;
+    RGAttachmentInfo a{};
+    a.image = h;
+    a.clearOnLoad = clearOnLoad;
 	a.clear = clear;
 	a.store = true;
 	_colors.push_back(a);
