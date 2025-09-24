@@ -1,26 +1,25 @@
 ## Render Passes: Background → Geometry → Lighting → Transparent → ImGui
 
-Modular pass system built on dynamic rendering. `RenderPassManager` sequences standalone passes that read/write shared images via `EngineContext`.
+Pass classes (`IRenderPass`) define initialization and recording logic, but execution is now driven by the Render Graph. Each pass exposes a `register_graph(...)` method to declare dependencies and render targets; the graph handles barriers, layouts, and dynamic rendering.
 
 ### Overview
 
-- Interface: Each pass implements `IRenderPass { init(context); execute(cmd); cleanup(); getName(); }`.
-- Manager: `RenderPassManager::init()` creates and registers built-in passes: `BackgroundPass` (compute), `GeometryPass` (G-Buffer), `LightingPass` (deferred), plus optional `ImGuiPass`.
-- Dynamic rendering: Passes begin/end rendering with `vkCmdBeginRendering/EndRendering` and manage image layout transitions explicitly.
-- Shared targets: Passes coordinate through `SwapchainManager` images: `drawImage`, `gBufferPosition/Normal/Albedo`, `depthImage`.
-- Hot reload: Passes that use graphics pipelines should re-fetch handles each frame through `PipelineManager` to pick up shader changes.
+- Interface: Each pass implements `IRenderPass { init(context); execute(cmd); cleanup(); getName(); }`. Today, `execute()` is unused for built-in passes; work is recorded via the Render Graph record callback.
+- Manager: `RenderPassManager::init()` creates and stores built-in passes: `BackgroundPass` (compute), `GeometryPass` (G-Buffer), `LightingPass` (deferred), `TransparentPass`, plus optional `ImGuiPass`.
+- Render graph: Passes call `register_graph(graph, ...)` to declare image/buffer access and attachments. The graph inserts barriers and begins/ends dynamic rendering.
+- Shared targets: Passes coordinate through `SwapchainManager` images: `drawImage`, `gBufferPosition/Normal/Albedo`, `depthImage` (imported into the graph each frame).
+- Hot reload: Fetch graphics pipeline/layout by key each frame through `PipelineManager` in the record callback.
 
-### Quick Start — Add a New Pass
+### Quick Start — Add a New Pass (Render Graph)
 
 ```c++
 class MyPass : public IRenderPass {
 public:
-  void init(EngineContext* context) override {
-    _ctx = context;
-    // Build pipeline
+  void init(EngineContext* ctx) override {
+    _ctx = ctx;
     GraphicsPipelineCreateInfo info{};
-    info.vertexShaderPath   = "../shaders/fullscreen.vert.spv";
-    info.fragmentShaderPath = "../shaders/my_pass.frag.spv";
+    info.vertexShaderPath   = _ctx->getAssets()->shaderPath("fullscreen.vert.spv");
+    info.fragmentShaderPath = _ctx->getAssets()->shaderPath("my_pass.frag.spv");
     info.setLayouts = { _ctx->getDescriptorLayouts()->gpuSceneDataLayout() };
     info.configure = [this](PipelineBuilder& b){
       b.set_input_topology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
@@ -32,57 +31,60 @@ public:
     _ctx->pipelines->createGraphicsPipeline("my_pass", info);
   }
 
-  void execute(VkCommandBuffer cmd) override {
-    // Ensure target is in the right layout
-    vkutil::transition_image(cmd, _ctx->getSwapchain()->drawImage().image,
-                             VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-
-    // Acquire pipeline/layout each frame for hot reload
-    VkPipeline p{}; VkPipelineLayout l{};
-    _ctx->pipelines->getGraphics("my_pass", p, l);
-
-    // Dynamic rendering begin
-    VkRenderingAttachmentInfo color = vkinit::attachment_info(
-      _ctx->getSwapchain()->drawImage().imageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-    VkRenderingInfo ri = vkinit::rendering_info(_ctx->getDrawExtent(), &color, nullptr);
-    vkCmdBeginRendering(cmd, &ri);
-
-    // Bind + draw
-    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, p);
-    VkViewport vp{0,0,(float)_ctx->getDrawExtent().width,(float)_ctx->getDrawExtent().height,0,1};
-    vkCmdSetViewport(cmd, 0, 1, &vp);
-    VkRect2D sc{{0,0},{_ctx->getDrawExtent().width,_ctx->getDrawExtent().height}}; vkCmdSetScissor(cmd,0,1,&sc);
-    vkCmdDraw(cmd, 3, 1, 0, 0);
-    vkCmdEndRendering(cmd);
+  void register_graph(RenderGraph* graph, RGImageHandle draw, RGImageHandle depth) {
+    graph->add_pass(
+      "MyPass",
+      RGPassType::Graphics,
+      [draw, depth](RGPassBuilder& b, EngineContext*) {
+        b.write_color(draw);
+        b.write_depth(depth, false);
+      },
+      [this](VkCommandBuffer cmd, const RGPassResources&, EngineContext* ctx){
+        VkPipeline p{}; VkPipelineLayout l{};
+        ctx->pipelines->getGraphics("my_pass", p, l);
+        vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, p);
+        VkViewport vp{0,0,(float)ctx->getDrawExtent().width,(float)ctx->getDrawExtent().height,0,1};
+        vkCmdSetViewport(cmd, 0, 1, &vp);
+        VkRect2D sc{{0,0}, ctx->getDrawExtent()};
+        vkCmdSetScissor(cmd, 0, 1, &sc);
+        vkCmdDraw(cmd, 3, 1, 0, 0);
+      }
+    );
   }
 
-  void cleanup() override { /* destroy pass-owned layouts/sets if any */ }
+  void execute(VkCommandBuffer) override {} // unused with Render Graph
+  void cleanup() override {}
   const char* getName() const override { return "MyPass"; }
-private: EngineContext* _ctx{}; };
+private:
+  EngineContext* _ctx{};
+};
 
 // Register in RenderPassManager::init()
-auto myPass = std::make_unique<MyPass>(); myPass->init(context); addPass(std::move(myPass));
+auto myPass = std::make_unique<MyPass>();
+myPass->init(context);
+addPass(std::move(myPass));
 ```
 
 ### Built-in Passes
 
-- Background (compute): Writes directly into `drawImage` via `ComputeManager` instances. See `BackgroundPass::init_background_pipelines()` and `dispatchComputeInstance()`.
-- Geometry (G-Buffer): Renders scene to three color attachments and depth. Sorts by material/index to reduce binds and updates `EngineStats`.
-- Lighting (deferred): Fullscreen pass reading G-Buffer as sampled images, writing to `drawImage`. Pipeline built through `PipelineManager`.
-- Transparent (forward): Renders `DrawContext.TransparentSurfaces` with blending to `drawImage` after lighting, depth-tested (no depth writes) against `depthImage`.
-- ImGui: Rendered after copying `drawImage` into the current swapchain image, drawn on top.
+- Background (compute): Declares `ComputeWrite(drawImage)` and dispatches a selected effect instance.
+- Geometry (G-Buffer): Declares 3 color attachments and `DepthAttachment`, plus buffer reads for shared index/vertex buffers.
+- Lighting (deferred): Reads G‑Buffer as sampled images and writes to `drawImage`.
+- Transparent (forward): Writes to `drawImage` with depth test against `depthImage` after lighting.
+- ImGui: Inserted just before present to draw on the swapchain image.
 
 ### API Summary
 
-- `RenderPassManager::addPass(unique_ptr<IRenderPass>)`: Register a new pass.
-- `RenderPassManager::executeAll(cmd)`: Execute in insertion order.
-- `RenderPassManager::setImGuiPass(...)` / `executeImGui(...)`: Configure and render ImGui.
-- `IRenderPass`: Implement `init/execute/cleanup/getName`.
+- `RenderPassManager::addPass(unique_ptr<IRenderPass>)`: Register a new pass (storage/ownership only).
+- `RenderPassManager::setImGuiPass(...)`: Configure the optional ImGui pass.
+- `IRenderPass::register_graph(...)` (per pass class): Declare resources and recording callbacks for the Render Graph.
 
 ### Tips
 
-- Handle image layout transitions explicitly for every image you read/write in a pass.
-- Re-fetch graphics pipeline and layout by key each frame to pick up hot-reloaded shaders.
+- Don’t call `vkCmdBeginRendering` or add manual transitions for declared attachments; the Render Graph handles it.
+- Re-fetch pipeline and layout by key each frame to pick up hot-reloaded shaders.
 - Allocate transient descriptor sets from `currentFrame->_frameDescriptors`; free pass-owned layouts in `cleanup()`.
-- Use `EngineContext::getDrawExtent()` for dynamic viewport/scissor.
+- Use `EngineContext::getDrawExtent()` for viewport/scissor.
+
+See also: `docs/RenderGraph.md` for the builder API and synchronization details.
 

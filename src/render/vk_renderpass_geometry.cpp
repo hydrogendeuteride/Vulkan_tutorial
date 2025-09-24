@@ -17,42 +17,39 @@
 
 bool is_visible(const RenderObject &obj, const glm::mat4 &viewproj)
 {
-    std::array<glm::vec3, 8> corners{
-        glm::vec3{1, 1, 1},
-        glm::vec3{1, 1, -1},
-        glm::vec3{1, -1, 1},
-        glm::vec3{1, -1, -1},
-        glm::vec3{-1, 1, 1},
-        glm::vec3{-1, 1, -1},
-        glm::vec3{-1, -1, 1},
-        glm::vec3{-1, -1, -1},
+    const std::array<glm::vec3, 8> corners{
+        glm::vec3{+1, +1, +1}, glm::vec3{+1, +1, -1}, glm::vec3{+1, -1, +1}, glm::vec3{+1, -1, -1},
+        glm::vec3{-1, +1, +1}, glm::vec3{-1, +1, -1}, glm::vec3{-1, -1, +1}, glm::vec3{-1, -1, -1},
     };
 
-    glm::mat4 matrix = viewproj * obj.transform;
+    const glm::vec3 o = obj.bounds.origin;
+    const glm::vec3 e = obj.bounds.extents;
+    const glm::mat4 m = viewproj * obj.transform; // world -> clip
 
-    glm::vec3 min = {2., 2., 2.};
-    glm::vec3 max = {-2., -2., -2.};
-
-    for (int c = 0; c < 8; c++)
+    glm::vec4 clip[8];
+    for (int i = 0; i < 8; ++i)
     {
-        // project each corner into clip space
-        glm::vec4 v = matrix * glm::vec4(obj.bounds.origin + (corners[c] * obj.bounds.extents), 1.f);
-
-        // perspective correction
-        v.x = v.x / v.w;
-        v.y = v.y / v.w;
-        v.z = v.z / v.w;
-
-        min = glm::min(glm::vec3{v.x, v.y, v.z}, min);
-        max = glm::max(glm::vec3{v.x, v.y, v.z}, max);
+        const glm::vec3 p = o + corners[i] * e;
+        clip[i] = m * glm::vec4(p, 1.f);
     }
 
-    // check the clip space box is within the view
-    if (min.z > 1.f || max.z < 0.f || min.x > 1.f || max.x < -1.f || min.y > 1.f || max.y < -1.f)
-    {
-        return false;
-    }
-    return true;
+    auto all_out = [&](auto pred) {
+        for (int i = 0; i < 8; ++i)
+        {
+            if (!pred(clip[i])) return false;
+        }
+        return true;
+    };
+
+    // Clip volume in Vulkan (ZO): -w<=x<=w, -w<=y<=w, 0<=z<=w
+    if (all_out([](const glm::vec4 &v) { return v.x < -v.w; })) return false; // left
+    if (all_out([](const glm::vec4 &v) { return v.x >  v.w; })) return false; // right
+    if (all_out([](const glm::vec4 &v) { return v.y < -v.w; })) return false; // bottom
+    if (all_out([](const glm::vec4 &v) { return v.y >  v.w; })) return false; // top
+    if (all_out([](const glm::vec4 &v) { return v.z <  0.0f; })) return false; // near (ZO)
+    if (all_out([](const glm::vec4 &v) { return v.z >  v.w; })) return false; // far
+
+    return true; // intersects or is fully inside
 }
 
 void GeometryPass::init(EngineContext *context)
@@ -164,12 +161,10 @@ void GeometryPass::draw_geometry(VkCommandBuffer cmd,
 
     for (int i = 0; i < mainDrawContext.OpaqueSurfaces.size(); i++)
     {
-        // if (is_visible(mainDrawContext.OpaqueSurfaces[i], sceneData.viewproj))
-        // {
-        //     opaque_draws.push_back(i);
-        // }
-
-        opaque_draws.push_back(i);
+        if (is_visible(mainDrawContext.OpaqueSurfaces[i], sceneData.viewproj))
+        {
+            opaque_draws.push_back(i);
+        }
     }
 
     std::sort(opaque_draws.begin(), opaque_draws.end(), [&](const auto &iA, const auto &iB)

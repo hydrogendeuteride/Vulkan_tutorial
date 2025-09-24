@@ -84,80 +84,81 @@ bool RenderGraph::compile()
 {
     if (!_context) return false;
 
-	// --- Build dependency graph (topological sort) from declared reads/writes ---
-	const int n = static_cast<int>(_passes.size());
-	if (n <= 1)
-	{
-		// trivial order; still compute barriers below
-	}
-	else
-	{
-		std::vector<std::unordered_set<int> > adjSet(n);
-		std::vector<int> indeg(n, 0);
+    // --- Build dependency graph (topological sort) from declared reads/writes ---
+    const int n = static_cast<int>(_passes.size());
+    if (n <= 1)
+    {
+        // trivial order; still compute barriers below
+    }
+    else
+    {
+        std::vector<std::unordered_set<int> > adjSet(n);
+        std::vector<int> indeg(n, 0);
 
-		auto add_edge = [&](int u, int v) {
-			if (u == v) return;
-			if (u < 0 || v < 0 || u >= n || v >= n) return;
-			if (adjSet[u].insert(v).second) indeg[v]++;
-		};
+        auto add_edge = [&](int u, int v) {
+            if (u == v) return;
+            if (u < 0 || v < 0 || u >= n || v >= n) return;
+            if (adjSet[u].insert(v).second) indeg[v]++;
+        };
 
-		std::unordered_map<uint32_t, int> lastWriterImage;
-		std::unordered_map<uint32_t, std::vector<int> > lastReadersImage;
-		std::unordered_map<uint32_t, int> lastWriterBuffer;
-		std::unordered_map<uint32_t, std::vector<int> > lastReadersBuffer;
+        std::unordered_map<uint32_t, int> lastWriterImage;
+        std::unordered_map<uint32_t, std::vector<int> > lastReadersImage;
+        std::unordered_map<uint32_t, int> lastWriterBuffer;
+        std::unordered_map<uint32_t, std::vector<int> > lastReadersBuffer;
 
-		for (int i = 0; i < n; ++i)
-		{
-			const auto &p = _passes[i];
+        for (int i = 0; i < n; ++i)
+        {
+            const auto &p = _passes[i];
+            if (!p.enabled) continue;
 
-			// Image reads
-			for (const auto &r: p.imageReads)
-			{
-				if (!r.image.valid()) continue;
-				auto it = lastWriterImage.find(r.image.id);
-				if (it != lastWriterImage.end()) add_edge(it->second, i);
-				lastReadersImage[r.image.id].push_back(i);
-			}
+            // Image reads
+            for (const auto &r: p.imageReads)
+            {
+                if (!r.image.valid()) continue;
+                auto it = lastWriterImage.find(r.image.id);
+                if (it != lastWriterImage.end()) add_edge(it->second, i);
+                lastReadersImage[r.image.id].push_back(i);
+            }
 
 			// Image writes
-			for (const auto &w: p.imageWrites)
-			{
-				if (!w.image.valid()) continue;
-				auto itW = lastWriterImage.find(w.image.id);
-				if (itW != lastWriterImage.end()) add_edge(itW->second, i); // WAW
-				auto itR = lastReadersImage.find(w.image.id);
-				if (itR != lastReadersImage.end())
-				{
-					for (int rIdx: itR->second) add_edge(rIdx, i); // WAR
-					itR->second.clear();
-				}
-				lastWriterImage[w.image.id] = i;
-			}
+            for (const auto &w: p.imageWrites)
+            {
+                if (!w.image.valid()) continue;
+                auto itW = lastWriterImage.find(w.image.id);
+                if (itW != lastWriterImage.end()) add_edge(itW->second, i); // WAW
+                auto itR = lastReadersImage.find(w.image.id);
+                if (itR != lastReadersImage.end())
+                {
+                    for (int rIdx: itR->second) add_edge(rIdx, i); // WAR
+                    itR->second.clear();
+                }
+                lastWriterImage[w.image.id] = i;
+            }
 
-			// Buffer reads
-			for (const auto &r: p.bufferReads)
-			{
-				if (!r.buffer.valid()) continue;
-				auto it = lastWriterBuffer.find(r.buffer.id);
-				if (it != lastWriterBuffer.end()) add_edge(it->second, i);
-				lastReadersBuffer[r.buffer.id].push_back(i);
-			}
+            // Buffer reads
+            for (const auto &r: p.bufferReads)
+            {
+                if (!r.buffer.valid()) continue;
+                auto it = lastWriterBuffer.find(r.buffer.id);
+                if (it != lastWriterBuffer.end()) add_edge(it->second, i);
+                lastReadersBuffer[r.buffer.id].push_back(i);
+            }
 
-			// Buffer writes
-			for (const auto &w: p.bufferWrites)
-			{
-				if (!w.buffer.valid()) continue;
-				auto itW = lastWriterBuffer.find(w.buffer.id);
-				if (itW != lastWriterBuffer.end()) add_edge(itW->second, i); // WAW
-				auto itR = lastReadersBuffer.find(w.buffer.id);
-				if (itR != lastReadersBuffer.end())
-				{
-					for (int rIdx: itR->second) add_edge(rIdx, i); // WAR
-					itR->second.clear();
-				}
-				lastWriterBuffer[w.buffer.id] = i;
-			}
-		}
+            // Buffer writes
+            for (const auto &w: p.bufferWrites)
+            {
+                if (!w.buffer.valid()) continue;
+                auto itW = lastWriterBuffer.find(w.buffer.id);
+                if (itW != lastWriterBuffer.end()) add_edge(itW->second, i); // WAW
+                auto itR = lastReadersBuffer.find(w.buffer.id);
+                if (itR != lastReadersBuffer.end())
+                {
+                    for (int rIdx: itR->second) add_edge(rIdx, i); // WAR
+                    itR->second.clear();
+                }
+                lastWriterBuffer[w.buffer.id] = i;
+            }
+        }
 
 		// Kahn's algorithm
 		std::queue<int> q;
@@ -380,6 +381,7 @@ bool RenderGraph::compile()
     {
         pass.preImageBarriers.clear();
         pass.preBufferBarriers.clear();
+        if (!pass.enabled) { continue; }
 
 		std::unordered_map<uint32_t, RGImageUsage> desiredImageUsages;
 		desiredImageUsages.reserve(pass.imageReads.size() + pass.imageWrites.size());
@@ -594,6 +596,7 @@ void RenderGraph::execute(VkCommandBuffer cmd)
     for (size_t passIndex = 0; passIndex < _passes.size(); ++passIndex)
     {
         auto &p = _passes[passIndex];
+        if (!p.enabled) continue;
 
         // Debug label per pass
         if (_context && _context->getDevice())
@@ -746,7 +749,69 @@ RGImageHandle RenderGraph::import_draw_image()
 	d.format = _context->getSwapchain()->drawImage().imageFormat;
 	d.extent = _context->getDrawExtent();
 	d.currentLayout = VK_IMAGE_LAYOUT_GENERAL;
-	return import_image(d);
+    return import_image(d);
+}
+
+// --- Debug helpers ---
+void RenderGraph::debug_get_passes(std::vector<RGDebugPassInfo> &out) const
+{
+    out.clear();
+    out.reserve(_passes.size());
+    for (const auto &p : _passes)
+    {
+        RGDebugPassInfo info{};
+        info.name = p.name;
+        info.type = p.type;
+        info.enabled = p.enabled;
+        info.imageReads = static_cast<uint32_t>(p.imageReads.size());
+        info.imageWrites = static_cast<uint32_t>(p.imageWrites.size());
+        info.bufferReads = static_cast<uint32_t>(p.bufferReads.size());
+        info.bufferWrites = static_cast<uint32_t>(p.bufferWrites.size());
+        info.colorAttachmentCount = static_cast<uint32_t>(p.colorAttachments.size());
+        info.hasDepth = p.hasDepth;
+        out.push_back(std::move(info));
+    }
+}
+
+void RenderGraph::debug_get_images(std::vector<RGDebugImageInfo> &out) const
+{
+    out.clear();
+    out.reserve(_resources.image_count());
+    for (uint32_t i = 0; i < _resources.image_count(); ++i)
+    {
+        const RGImageRecord *rec = _resources.get_image(RGImageHandle{i});
+        if (!rec) continue;
+        RGDebugImageInfo info{};
+        info.id = i;
+        info.name = rec->name;
+        info.imported = rec->imported;
+        info.format = rec->format;
+        info.extent = rec->extent;
+        info.creationUsage = rec->creationUsage;
+        info.firstUse = rec->firstUse;
+        info.lastUse = rec->lastUse;
+        out.push_back(std::move(info));
+    }
+}
+
+void RenderGraph::debug_get_buffers(std::vector<RGDebugBufferInfo> &out) const
+{
+    out.clear();
+    out.reserve(_resources.buffer_count());
+    for (uint32_t i = 0; i < _resources.buffer_count(); ++i)
+    {
+        const RGBufferRecord *rec = _resources.get_buffer(RGBufferHandle{i});
+        if (!rec) continue;
+        RGDebugBufferInfo info{};
+        info.id = i;
+        info.name = rec->name;
+        info.imported = rec->imported;
+        info.size = rec->size;
+        info.usage = rec->usage;
+        info.firstUse = rec->firstUse;
+        info.lastUse = rec->lastUse;
+        out.push_back(std::move(info));
+    }
 }
 
 RGImageHandle RenderGraph::import_depth_image()

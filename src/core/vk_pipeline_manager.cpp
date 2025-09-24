@@ -119,6 +119,22 @@ void PipelineManager::hotReloadChanged()
     }
 }
 
+void PipelineManager::debug_get_graphics(std::vector<GraphicsPipelineDebugInfo> &out) const
+{
+    out.clear();
+    out.reserve(_graphicsPipelines.size());
+    for (const auto &kv : _graphicsPipelines)
+    {
+        const auto &rec = kv.second;
+        GraphicsPipelineDebugInfo info{};
+        info.name = kv.first;
+        info.vertexShaderPath = rec.spec.vertexShaderPath;
+        info.fragmentShaderPath = rec.spec.fragmentShaderPath;
+        info.valid = (rec.pipeline != VK_NULL_HANDLE) && (rec.layout != VK_NULL_HANDLE);
+        out.push_back(std::move(info));
+    }
+}
+
 bool PipelineManager::buildGraphics(GraphicsPipelineRecord &rec) const
 {
     VkShaderModule vert = VK_NULL_HANDLE;

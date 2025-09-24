@@ -97,6 +97,16 @@ public:
     // Rebuild pipelines whose shaders changed on disk
     void hotReloadChanged();
 
+    // Debug helpers (graphics only)
+    struct GraphicsPipelineDebugInfo
+    {
+        std::string name;
+        std::string vertexShaderPath;
+        std::string fragmentShaderPath;
+        bool valid = false;
+    };
+    void debug_get_graphics(std::vector<GraphicsPipelineDebugInfo>& out) const;
+
 private:
     struct GraphicsPipelineRecord
     {

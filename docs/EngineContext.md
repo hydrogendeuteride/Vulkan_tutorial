@@ -12,7 +12,13 @@ Central DI-style handle that modules use to access device/managers, per-frame st
 
 Context is wired in `VulkanEngine::init()` and refreshed each frame before passes execute.
 
-### Quick Start — In a Render Pass
+### Render Graph Note
+
+- Built‑in passes no longer call `vkCmdBeginRendering` or perform image layout transitions directly.
+- Use your pass’ `register_graph(graph, ...)` to declare attachments and resource accesses; the Render Graph inserts barriers and begins/ends dynamic rendering.
+- See `docs/RenderGraph.md` for the builder API and scheduling.
+
+### Quick Start — In a Render Pass (essentials)
 
 ```c++
 void MyPass::init(EngineContext* context) {
@@ -56,12 +62,6 @@ void MyPass::execute(VkCommandBuffer cmd) {
   writer.write_buffer(0, ubuf.buffer, sizeof(GPUSceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
   writer.update_set(_context->getDevice()->device(), set);
 
-  // Dynamic rendering target
-  VkRenderingAttachmentInfo color = vkinit::attachment_info(
-      _context->getSwapchain()->drawImage().imageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-  VkRenderingInfo ri = vkinit::rendering_info(_context->getDrawExtent(), &color, nullptr);
-  vkCmdBeginRendering(cmd, &ri);
-
   vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, p);
   vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, l, 0, 1, &set, 0, nullptr);
 
@@ -72,7 +72,6 @@ void MyPass::execute(VkCommandBuffer cmd) {
   vkCmdSetScissor(cmd, 0, 1, &sc);
 
   vkCmdDraw(cmd, 3, 1, 0, 0);
-  vkCmdEndRendering(cmd);
 }
 ```
 

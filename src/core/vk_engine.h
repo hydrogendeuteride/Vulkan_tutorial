@@ -6,6 +6,7 @@
 #include <core/vk_types.h>
 #include <vector>
 #include <string>
+#include <unordered_map>
 #include "vk_mem_alloc.h"
 #include <deque>
 #include <functional>
@@ -101,7 +102,10 @@ public:
 
     EngineStats stats;
 
-	std::vector<RenderPass> renderPasses;
+    std::vector<RenderPass> renderPasses;
+
+    // Debug: persistent pass enable overrides (by pass name)
+    std::unordered_map<std::string, bool> _rgPassToggles;
 
 	//initializes everything in the engine
 	void init();

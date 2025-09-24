@@ -40,7 +40,7 @@ struct Pass; // fwd
 	// Build internal state for this frame (no-op in v1)
 	bool compile();
 
-    // Execute in insertion order (no barriers yet)
+    // Execute in insertion order (skips disabled passes)
     void execute(VkCommandBuffer cmd);
 
 	// Convenience import helpers (read from EngineContext::swapchain)
@@ -50,9 +50,55 @@ struct Pass; // fwd
 	RGImageHandle import_gbuffer_normal();
 	RGImageHandle import_gbuffer_albedo();
 	RGImageHandle import_swapchain_image(uint32_t index);
-	void add_present_chain(RGImageHandle sourceDraw,
-	                       RGImageHandle targetSwapchain,
-	                       std::function<void(RenderGraph&)> appendExtra = {});
+    void add_present_chain(RGImageHandle sourceDraw,
+                           RGImageHandle targetSwapchain,
+                           std::function<void(RenderGraph&)> appendExtra = {});
+
+    // --- Debug helpers ---
+    struct RGDebugPassInfo
+    {
+        std::string name;
+        RGPassType type{};
+        bool enabled = true;
+        uint32_t imageReads = 0;
+        uint32_t imageWrites = 0;
+        uint32_t bufferReads = 0;
+        uint32_t bufferWrites = 0;
+        uint32_t colorAttachmentCount = 0;
+        bool hasDepth = false;
+    };
+
+    struct RGDebugImageInfo
+    {
+        uint32_t id{};
+        std::string name;
+        bool imported = true;
+        VkFormat format = VK_FORMAT_UNDEFINED;
+        VkExtent2D extent{0,0};
+        VkImageUsageFlags creationUsage = 0;
+        int firstUse = -1;
+        int lastUse = -1;
+    };
+
+    struct RGDebugBufferInfo
+    {
+        uint32_t id{};
+        std::string name;
+        bool imported = true;
+        VkDeviceSize size = 0;
+        VkBufferUsageFlags usage = 0;
+        int firstUse = -1;
+        int lastUse = -1;
+    };
+
+    size_t pass_count() const { return _passes.size(); }
+    const char* pass_name(size_t i) const { return i < _passes.size() ? _passes[i].name.c_str() : ""; }
+    bool pass_enabled(size_t i) const { return i < _passes.size() ? _passes[i].enabled : false; }
+    void set_pass_enabled(size_t i, bool e) { if (i < _passes.size()) _passes[i].enabled = e; }
+
+    void debug_get_passes(std::vector<RGDebugPassInfo>& out) const;
+    void debug_get_images(std::vector<RGDebugImageInfo>& out) const;
+    void debug_get_buffers(std::vector<RGDebugBufferInfo>& out) const;
 
 private:
 	struct ImportedImage
@@ -82,6 +128,8 @@ private:
         // Cached rendering info derived from declared attachments (filled at execute)
         bool hasRendering = false;
         VkExtent2D renderExtent{};
+
+        bool enabled = true;
     };
 
 	EngineContext* _context = nullptr;
