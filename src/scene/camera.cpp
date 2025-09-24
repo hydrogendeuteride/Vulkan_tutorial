@@ -11,8 +11,10 @@ void Camera::update()
 void Camera::processSDLEvent(SDL_Event& e)
 {
     if (e.type == SDL_KEYDOWN) {
-        if (e.key.keysym.sym == SDLK_w) { velocity.z = -1; }
-        if (e.key.keysym.sym == SDLK_s) { velocity.z = 1; }
+        // Camera uses +Z forward convention (matching our projection)
+        // Map 'W' to forward (+Z) and 'S' to backward (-Z)
+        if (e.key.keysym.sym == SDLK_w) { velocity.z = 1; }
+        if (e.key.keysym.sym == SDLK_s) { velocity.z = -1; }
         if (e.key.keysym.sym == SDLK_a) { velocity.x = -1; }
         if (e.key.keysym.sym == SDLK_d) { velocity.x = 1; }
     }
@@ -25,8 +27,10 @@ void Camera::processSDLEvent(SDL_Event& e)
     }
 
     if (e.type == SDL_MOUSEMOTION) {
-        yaw += (float)e.motion.xrel / 200.f;
-        pitch -= (float)e.motion.yrel / 200.f;
+        // Mouse right (xrel > 0) turns view right with +Z-forward
+        yaw += (float)e.motion.xrel / 200.f;   // axis = -Y
+        // Mouse up (yrel < 0) looks up with +Z-forward
+        pitch += (float)e.motion.yrel / 200.f;
     }
 }
 
@@ -46,6 +50,7 @@ glm::mat4 Camera::getRotationMatrix()
     // the final rotation matrix
 
     glm::quat pitchRotation = glm::angleAxis(pitch, glm::vec3 { 1.f, 0.f, 0.f });
+    // Yaw around -Y keeps mouse-right -> turn-right with +Z-forward
     glm::quat yawRotation = glm::angleAxis(yaw, glm::vec3 { 0.f, -1.f, 0.f });
 
     return glm::toMat4(yawRotation) * glm::toMat4(pitchRotation);

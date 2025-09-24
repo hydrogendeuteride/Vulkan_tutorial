@@ -4,6 +4,7 @@
 #include "vk_renderpass_geometry.h"
 #include "vk_renderpass_imgui.h"
 #include "vk_renderpass_lighting.h"
+#include "vk_renderpass_transparent.h"
 
 void RenderPassManager::init(EngineContext *context)
 {
@@ -20,6 +21,10 @@ void RenderPassManager::init(EngineContext *context)
     auto lightingPass = std::make_unique<LightingPass>();
     lightingPass->init(context);
     addPass(std::move(lightingPass));
+
+    auto transparentPass = std::make_unique<TransparentPass>();
+    transparentPass->init(context);
+    addPass(std::move(transparentPass));
 }
 
 void RenderPassManager::cleanup()

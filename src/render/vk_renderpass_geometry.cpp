@@ -276,10 +276,7 @@ void GeometryPass::draw_geometry(VkCommandBuffer cmd,
         draw(mainDrawContext.OpaqueSurfaces[r]);
     }
 
-    for (auto &r: mainDrawContext.TransparentSurfaces)
-    {
-        draw(r);
-    }
+    // Transparent surfaces are rendered in a separate Transparent pass after lighting.
 
     // RenderGraph will end dynamic rendering for this pass.
 

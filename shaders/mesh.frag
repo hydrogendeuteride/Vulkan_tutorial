@@ -49,8 +49,9 @@ float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
 
 void main()
 {
-    // Apply baseColor texture and baseColorFactor once
-    vec3 albedo = inColor * texture(colorTex, inUV).rgb * materialData.colorFactors.rgb;
+    // Base color with material factor and texture
+    vec4 baseTex = texture(colorTex, inUV);
+    vec3 albedo = inColor * baseTex.rgb * materialData.colorFactors.rgb;
     // glTF: metallicRoughnessTexture uses G=roughness, B=metallic
     vec2 mrTex = texture(metalRoughTex, inUV).gb;
     float roughness = clamp(mrTex.x * materialData.metal_rough_factors.y, 0.04, 1.0);
@@ -81,5 +82,7 @@ void main()
     vec3 color = (kD * albedo / PI + specular) * irradiance;
     color += albedo * sceneData.ambientColor.rgb;
 
-    outFragColor = vec4(color, 1.0);
+    // Alpha from baseColor texture and factor (glTF spec)
+    float alpha = clamp(baseTex.a * materialData.colorFactors.a, 0.0, 1.0);
+    outFragColor = vec4(color, alpha);
 }

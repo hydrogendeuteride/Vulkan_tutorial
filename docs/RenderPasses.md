@@ -1,4 +1,4 @@
-## Render Passes: Background → Geometry → Lighting → ImGui
+## Render Passes: Background → Geometry → Lighting → Transparent → ImGui
 
 Modular pass system built on dynamic rendering. `RenderPassManager` sequences standalone passes that read/write shared images via `EngineContext`.
 
@@ -69,6 +69,7 @@ auto myPass = std::make_unique<MyPass>(); myPass->init(context); addPass(std::mo
 - Background (compute): Writes directly into `drawImage` via `ComputeManager` instances. See `BackgroundPass::init_background_pipelines()` and `dispatchComputeInstance()`.
 - Geometry (G-Buffer): Renders scene to three color attachments and depth. Sorts by material/index to reduce binds and updates `EngineStats`.
 - Lighting (deferred): Fullscreen pass reading G-Buffer as sampled images, writing to `drawImage`. Pipeline built through `PipelineManager`.
+- Transparent (forward): Renders `DrawContext.TransparentSurfaces` with blending to `drawImage` after lighting, depth-tested (no depth writes) against `depthImage`.
 - ImGui: Rendered after copying `drawImage` into the current swapchain image, drawn on top.
 
 ### API Summary

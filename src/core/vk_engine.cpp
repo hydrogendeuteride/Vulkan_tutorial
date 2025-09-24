@@ -25,6 +25,7 @@
 #include "render/vk_renderpass_geometry.h"
 #include "render/vk_renderpass_imgui.h"
 #include "render/vk_renderpass_lighting.h"
+#include "render/vk_renderpass_transparent.h"
 #include "vk_resource.h"
 #include "engine_context.h"
 #include "core/vk_pipeline_manager.h"
@@ -120,7 +121,7 @@ void VulkanEngine::init()
     auto imguiPass = std::make_unique<ImGuiPass>();
     _renderPassManager->setImGuiPass(std::move(imguiPass));
 
-    const std::string structurePath = _assetManager->modelPath("structure.glb");
+    const std::string structurePath = _assetManager->modelPath("Benz.glb");
     const auto structureFile = _assetManager->loadGLTF(structurePath);
 
     assert(structureFile.has_value());
@@ -328,6 +329,10 @@ void VulkanEngine::draw()
             if (auto *lighting = _renderPassManager->getPass<LightingPass>())
             {
                 lighting->register_graph(_renderGraph.get(), hDraw, hGBufferPosition, hGBufferNormal, hGBufferAlbedo);
+            }
+            if (auto *transparent = _renderPassManager->getPass<TransparentPass>())
+            {
+                transparent->register_graph(_renderGraph.get(), hDraw, hDepth);
             }
             imguiPass = _renderPassManager->getImGuiPass();
         }

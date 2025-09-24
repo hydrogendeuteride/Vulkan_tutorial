@@ -53,7 +53,8 @@ void GLTFMetallic_Roughness::build_pipelines(VulkanEngine *engine)
         b.set_polygon_mode(VK_POLYGON_MODE_FILL);
         b.set_cull_mode(VK_CULL_MODE_NONE, VK_FRONT_FACE_CLOCKWISE);
         b.set_multisampling_none();
-        b.enable_blending_additive();
+        // Physically-based transparency uses standard alpha blending
+        b.enable_blending_alphablend();
         // Transparent pass: keep reverse-Z test (no writes)
         b.enable_depthtest(false, VK_COMPARE_OP_GREATER_OR_EQUAL);
         b.set_color_attachment_format(engine->_swapchainManager->drawImage().imageFormat);

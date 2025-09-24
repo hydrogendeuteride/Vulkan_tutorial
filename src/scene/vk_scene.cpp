@@ -74,12 +74,28 @@ void SceneManager::update_scene()
     }
 
     glm::mat4 view = mainCamera.getViewMatrix();
-    // Reverse-Z configuration: original code path
-    glm::mat4 projection = glm::perspective(
-        glm::radians(70.f),
-        (float) _context->getSwapchain()->windowExtent().width / (float) _context->getSwapchain()->windowExtent().height,
-        10000.f, 0.1f);
-    projection[1][1] *= -1;
+    // Use reversed infinite-Z projection to avoid far-plane clipping on very large scenes.
+    // Vulkan clip space is 0..1 (GLM_FORCE_DEPTH_ZERO_TO_ONE) and requires Y flip.
+    auto makeReversedInfinitePerspective = [](float fovyRadians, float aspect, float zNear)
+    {
+        // Column-major matrix; indices are [column][row]
+        float f = 1.0f / tanf(fovyRadians * 0.5f);
+        glm::mat4 m(0.0f);
+        m[0][0] = f / aspect;
+        m[1][1] = f;
+        m[2][2] = 0.0f;
+        m[2][3] = 1.0f;     // w comes from z_eye
+        m[3][2] = zNear;    // maps near -> 1, far -> 0 (reversed-Z)
+        return m;
+    };
+
+    const float fov = glm::radians(70.f);
+    const float aspect = (float) _context->getSwapchain()->windowExtent().width /
+                         (float) _context->getSwapchain()->windowExtent().height;
+    const float nearPlane = 0.1f;
+    glm::mat4 projection = makeReversedInfinitePerspective(fov, aspect, nearPlane);
+    // Vulkan NDC has inverted Y.
+    projection[1][1] *= -1.0f;
 
     sceneData.view = view;
     sceneData.proj = projection;
