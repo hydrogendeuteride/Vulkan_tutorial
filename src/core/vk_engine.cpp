@@ -26,6 +26,7 @@
 #include "render/vk_renderpass_imgui.h"
 #include "render/vk_renderpass_lighting.h"
 #include "render/vk_renderpass_transparent.h"
+#include "render/vk_renderpass_tonemap.h"
 #include "vk_resource.h"
 #include "engine_context.h"
 #include "core/vk_pipeline_manager.h"
@@ -121,7 +122,7 @@ void VulkanEngine::init()
     auto imguiPass = std::make_unique<ImGuiPass>();
     _renderPassManager->setImGuiPass(std::move(imguiPass));
 
-    const std::string structurePath = _assetManager->modelPath("structure.glb");
+    const std::string structurePath = _assetManager->modelPath("Benz.glb");
     const auto structureFile = _assetManager->loadGLTF(structurePath);
 
     assert(structureFile.has_value());
@@ -315,6 +316,7 @@ void VulkanEngine::draw()
         _resourceManager->register_upload_pass(*_renderGraph, get_current_frame());
 
         ImGuiPass *imguiPass = nullptr;
+        RGImageHandle finalColor = hDraw; // by default, present HDR draw directly (copy)
 
         if (_renderPassManager)
         {
@@ -335,6 +337,12 @@ void VulkanEngine::draw()
                 transparent->register_graph(_renderGraph.get(), hDraw, hDepth);
             }
             imguiPass = _renderPassManager->getImGuiPass();
+
+            // Optional Tonemap pass: sample HDR draw -> LDR intermediate
+            if (auto *tonemap = _renderPassManager->getPass<TonemapPass>())
+            {
+                finalColor = tonemap->register_graph(_renderGraph.get(), hDraw);
+            }
         }
 
         auto appendPresentExtras = [imguiPass, hSwapchain](RenderGraph &graph)
@@ -345,7 +353,7 @@ void VulkanEngine::draw()
             }
         };
 
-        _renderGraph->add_present_chain(hDraw, hSwapchain, appendPresentExtras);
+        _renderGraph->add_present_chain(finalColor, hSwapchain, appendPresentExtras);
 
         // Apply persistent pass enable overrides
         for (size_t i = 0; i < _renderGraph->pass_count(); ++i)
@@ -628,6 +636,27 @@ void VulkanEngine::run()
             ImGui::Text("Swapchain:   %ux%u", scExt.width, scExt.height);
             ImGui::Text("Draw fmt:    %s", string_VkFormat(_swapchainManager->drawImage().imageFormat));
             ImGui::Text("Swap fmt:    %s", string_VkFormat(_swapchainManager->swapchainImageFormat()));
+            ImGui::End();
+        }
+
+        // PostFX window
+        if (ImGui::Begin("PostFX"))
+        {
+            if (auto *tm = _renderPassManager->getPass<TonemapPass>())
+            {
+                float exp = tm->exposure();
+                int mode = tm->mode();
+                if (ImGui::SliderFloat("Exposure", &exp, 0.05f, 8.0f)) { tm->setExposure(exp); }
+                ImGui::TextUnformatted("Operator");
+                ImGui::SameLine();
+                if (ImGui::RadioButton("Reinhard", mode == 0)) { mode = 0; tm->setMode(mode); }
+                ImGui::SameLine();
+                if (ImGui::RadioButton("ACES", mode == 1)) { mode = 1; tm->setMode(mode); }
+            }
+            else
+            {
+                ImGui::TextUnformatted("Tonemap pass not available");
+            }
             ImGui::End();
         }
 

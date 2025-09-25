@@ -50,6 +50,8 @@ add_executable (engine
   render/vk_renderpass_transparent.cpp
   render/vk_renderpass_imgui.h
   render/vk_renderpass_imgui.cpp
+  render/vk_renderpass_tonemap.h
+  render/vk_renderpass_tonemap.cpp
   # render graph (initial skeleton)
   render/rg_types.h
   render/rg_graph.h

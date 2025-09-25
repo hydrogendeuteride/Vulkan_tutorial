@@ -5,6 +5,7 @@
 #include "vk_renderpass_imgui.h"
 #include "vk_renderpass_lighting.h"
 #include "vk_renderpass_transparent.h"
+#include "vk_renderpass_tonemap.h"
 
 void RenderPassManager::init(EngineContext *context)
 {
@@ -25,6 +26,10 @@ void RenderPassManager::init(EngineContext *context)
     auto transparentPass = std::make_unique<TransparentPass>();
     transparentPass->init(context);
     addPass(std::move(transparentPass));
+
+    auto tonemapPass = std::make_unique<TonemapPass>();
+    tonemapPass->init(context);
+    addPass(std::move(tonemapPass));
 }
 
 void RenderPassManager::cleanup()
