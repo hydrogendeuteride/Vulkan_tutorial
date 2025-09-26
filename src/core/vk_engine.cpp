@@ -482,6 +482,8 @@ void VulkanEngine::run()
             ImGui::End();
         }
 
+        // (Removed Camera tuning window; use mouse wheel to adjust speed or Ctrl+wheel for FOV)
+
         // Render Graph debug window
         if (ImGui::Begin("Render Graph"))
         {
