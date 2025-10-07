@@ -43,6 +43,9 @@ foreach(GLSL ${GLSL_SOURCE_FILES})
   list(APPEND SPIRV_BINARY_FILES ${SPIRV})
 endforeach(GLSL)
 
-add_custom_target(
+# Build all SPIR-V blobs before the engine so pipelines hot‑reload correctly
+add_custom_target(shaders
     DEPENDS ${SPIRV_BINARY_FILES}
-    )
+)
+
+add_dependencies(engine shaders)

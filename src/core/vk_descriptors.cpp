@@ -10,6 +10,16 @@ void DescriptorLayoutBuilder::add_binding(uint32_t binding, VkDescriptorType typ
     bindings.push_back(newbind);
 }
 
+void DescriptorLayoutBuilder::add_binding(uint32_t binding, VkDescriptorType type, uint32_t count)
+{
+    VkDescriptorSetLayoutBinding newbind{};
+    newbind.binding = binding;
+    newbind.descriptorCount = count;
+    newbind.descriptorType = type;
+
+    bindings.push_back(newbind);
+}
+
 void DescriptorLayoutBuilder::clear()
 {
     bindings.clear();
@@ -72,6 +82,23 @@ void DescriptorWriter::write_image(int binding, VkImageView image, VkSampler sam
     write.descriptorType = type;
     write.pImageInfo = &info;
 
+    writes.push_back(write);
+}
+
+void DescriptorWriter::write_images(int binding, std::span<VkDescriptorImageInfo> infos, VkDescriptorType type)
+{
+    if (infos.empty()) return;
+
+    // Copy the infos into our deque to keep memory alive until update_set
+    size_t base = imageInfos.size();
+    for (const auto &i : infos) imageInfos.push_back(i);
+
+    VkWriteDescriptorSet write = {.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
+    write.dstBinding = binding;
+    write.dstSet = VK_NULL_HANDLE;
+    write.descriptorCount = static_cast<uint32_t>(infos.size());
+    write.descriptorType = type;
+    write.pImageInfo = &imageInfos[base];
     writes.push_back(write);
 }
 

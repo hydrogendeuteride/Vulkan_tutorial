@@ -4,6 +4,7 @@
 #include "vk_renderpass_geometry.h"
 #include "vk_renderpass_imgui.h"
 #include "vk_renderpass_lighting.h"
+#include "vk_renderpass_shadow_csm.h"
 #include "vk_renderpass_transparent.h"
 #include "vk_renderpass_tonemap.h"
 
@@ -18,6 +19,11 @@ void RenderPassManager::init(EngineContext *context)
     auto geometryPass = std::make_unique<GeometryPass>();
     geometryPass->init(context);
     addPass(std::move(geometryPass));
+
+    // Shadow mapping before lighting
+    auto csmPass = std::make_unique<CSMShadowPass>();
+    csmPass->init(context);
+    addPass(std::move(csmPass));
 
     auto lightingPass = std::make_unique<LightingPass>();
     lightingPass->init(context);

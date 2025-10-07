@@ -446,6 +446,11 @@ bool RenderGraph::compile()
                 barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 
                 const RGImageRecord *rec = _resources.get_image(RGImageHandle{id});
+                // If sampling a depth image, prefer depth-stencil read-only layout
+                if (rec && is_depth_format(rec->format) && desired.layout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+                {
+                    desired.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+                }
                 barrier.image = rec ? rec->image : VK_NULL_HANDLE;
 
                 VkImageAspectFlags aspect = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -625,8 +630,10 @@ void RenderGraph::execute(VkCommandBuffer cmd)
             VkRenderingAttachmentInfo depthInfo{};
             bool hasDepth = false;
 
-            // Choose renderArea as the min of all attachment extents and the desired draw extent
-            VkExtent2D chosenExtent{_context->getDrawExtent()};
+            // Choose renderArea as the min of all declared attachment extents.
+            // Start from the first attachment extent rather than the engine draw extent,
+            // so passes with different-sized targets (e.g., shadow maps) render correctly.
+            VkExtent2D chosenExtent{0, 0};
             auto clamp_min = [](VkExtent2D a, VkExtent2D b) {
                 return VkExtent2D{std::min(a.width, b.width), std::min(a.height, b.height)};
             };
@@ -645,7 +652,11 @@ void RenderGraph::execute(VkCommandBuffer cmd)
                                                                          VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
                 if (!a.store) info.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
                 colorInfos.push_back(info);
-                if (rec->extent.width && rec->extent.height) chosenExtent = clamp_min(chosenExtent, rec->extent);
+                if (rec->extent.width && rec->extent.height)
+                {
+                    if (chosenExtent.width == 0 && chosenExtent.height == 0) chosenExtent = rec->extent;
+                    else chosenExtent = clamp_min(chosenExtent, rec->extent);
+                }
                 if (firstColorExtent.width == 0 && firstColorExtent.height == 0)
                 {
                     firstColorExtent = rec->extent;
@@ -670,13 +681,19 @@ void RenderGraph::execute(VkCommandBuffer cmd)
                     else depthInfo.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
                     if (!p.depthAttachment.store) depthInfo.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
                     hasDepth = true;
-                    if (rec->extent.width && rec->extent.height) chosenExtent = clamp_min(chosenExtent, rec->extent);
+                    if (rec->extent.width && rec->extent.height)
+                    {
+                        if (chosenExtent.width == 0 && chosenExtent.height == 0) chosenExtent = rec->extent;
+                        else chosenExtent = clamp_min(chosenExtent, rec->extent);
+                    }
                 }
             }
 
 			VkRenderingInfo ri{};
 			ri.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
-			ri.renderArea = VkRect2D{VkOffset2D{0, 0}, chosenExtent};
+            // Fallback to engine draw extent if attachments didn't specify
+            VkExtent2D finalExtent = chosenExtent.width ? chosenExtent : _context->getDrawExtent();
+            ri.renderArea = VkRect2D{VkOffset2D{0, 0}, finalExtent};
 			ri.layerCount = 1;
 			ri.colorAttachmentCount = static_cast<uint32_t>(colorInfos.size());
 			ri.pColorAttachments = colorInfos.empty() ? nullptr : colorInfos.data();

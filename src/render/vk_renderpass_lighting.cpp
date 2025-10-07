@@ -20,13 +20,22 @@ void LightingPass::init(EngineContext *context)
 {
     _context = context;
 
-    // Build descriptor layout for GBuffer inputs
+    // Build descriptor layout for GBuffer inputs (set=1)
     {
         DescriptorLayoutBuilder builder;
         builder.add_binding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
         builder.add_binding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
         builder.add_binding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
         _gBufferInputDescriptorLayout = builder.build(_context->getDevice()->device(), VK_SHADER_STAGE_FRAGMENT_BIT);
+    }
+
+    // Build descriptor layout for Shadow inputs (set=2)
+    {
+        constexpr uint32_t NUM_CASCADES = 4; // must match shader include
+        DescriptorLayoutBuilder builder;
+        builder.add_binding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER); // ShadowData UBO
+        builder.add_binding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, NUM_CASCADES); // array
+        _shadowSetLayout = builder.build(_context->getDevice()->device(), VK_SHADER_STAGE_FRAGMENT_BIT);
     }
 
     // Allocate and write GBuffer descriptor set
@@ -46,7 +55,8 @@ void LightingPass::init(EngineContext *context)
     // Build lighting pipeline through PipelineManager
     VkDescriptorSetLayout layouts[] = {
         _context->getDescriptorLayouts()->gpuSceneDataLayout(),
-        _gBufferInputDescriptorLayout
+        _gBufferInputDescriptorLayout,
+        _shadowSetLayout
     };
 
     GraphicsPipelineCreateInfo info{};
@@ -73,6 +83,7 @@ void LightingPass::init(EngineContext *context)
     _deletionQueue.push_function([&]() {
         // Pipelines are owned by PipelineManager; only destroy our local descriptor set layout
         vkDestroyDescriptorSetLayout(_context->getDevice()->device(), _gBufferInputDescriptorLayout, nullptr);
+        vkDestroyDescriptorSetLayout(_context->getDevice()->device(), _shadowSetLayout, nullptr);
     });
 }
 
@@ -85,34 +96,121 @@ void LightingPass::register_graph(RenderGraph *graph,
                                   RGImageHandle drawHandle,
                                   RGImageHandle gbufferPosition,
                                   RGImageHandle gbufferNormal,
-                                  RGImageHandle gbufferAlbedo)
+                                  RGImageHandle gbufferAlbedo,
+                                  const std::vector<RGImageHandle>& shadowMaps,
+                                  const std::vector<float>& shadowSplits,
+                                  const std::vector<glm::mat4>& shadowLightVP,
+                                  uint32_t shadowCascadeCount,
+                                  uint32_t shadowMapSize,
+                                  float shadowSampleBias,
+                                  bool visualizeShadow)
 {
     if (!graph || !drawHandle.valid() || !gbufferPosition.valid() || !gbufferNormal.valid() || !gbufferAlbedo.valid())
     {
         return;
     }
 
+    // Copy params for capture
+    auto cascades = shadowMaps; // shallow copy of handles
+    auto splits = shadowSplits;
+    auto lightVP = shadowLightVP;
+    uint32_t cascadeCount = shadowCascadeCount ? shadowCascadeCount : static_cast<uint32_t>(cascades.size());
+    uint32_t mapSize = shadowMapSize;
+    float sampleBias = shadowSampleBias;
+    bool visualize = visualizeShadow;
+
     graph->add_pass(
         "Lighting",
         RGPassType::Graphics,
-        [drawHandle, gbufferPosition, gbufferNormal, gbufferAlbedo](RGPassBuilder &builder, EngineContext *)
+        [drawHandle, gbufferPosition, gbufferNormal, gbufferAlbedo, cascades](RGPassBuilder &builder, EngineContext *)
         {
             builder.read(gbufferPosition, RGImageUsage::SampledFragment);
             builder.read(gbufferNormal, RGImageUsage::SampledFragment);
             builder.read(gbufferAlbedo, RGImageUsage::SampledFragment);
+            for (auto h : cascades) { if (h) builder.read(h, RGImageUsage::SampledFragment); }
 
             builder.write_color(drawHandle);
         },
-        [this, drawHandle](VkCommandBuffer cmd, const RGPassResources &res, EngineContext *ctx)
+        [this, drawHandle, cascades, splits, lightVP, cascadeCount, mapSize, sampleBias, visualize](VkCommandBuffer cmd, const RGPassResources &res, EngineContext *ctx)
         {
-            draw_lighting(cmd, ctx, res, drawHandle);
+            // Stash cascade handles in the context via closure by writing to a thread-local? Not needed.
+            // We'll pass them through via member variables soon if required. For now, build shadow set inline.
+            // We forward to draw_lighting which will only handle core pipeline + gbuffer; 
+            // shadow descriptors are bound here before drawing.
+
+            if (!ctx || !ctx->currentFrame) return;
+
+            // Prepare ShadowData UBO
+            struct ShadowGPUData
+            {
+                glm::mat4 lightVP[4];
+                glm::vec4 splits; // x=d1, y=d2, z=d3, w=d4 (far)
+                glm::vec4 params; // x=cascadeCount, y=mapSize, z=bias, w=unused
+            };
+
+            ShadowGPUData sdata{};
+            sdata.params = glm::vec4((float)std::max(1u, cascadeCount), (float)std::max(1u, mapSize), sampleBias, visualize ? 1.0f : 0.0f);
+            for (uint32_t i = 0; i < 4; ++i)
+            {
+                if (i < lightVP.size()) sdata.lightVP[i] = lightVP[i];
+                else sdata.lightVP[i] = glm::mat4(1.0f);
+            }
+            // Map split distances:
+            // - 'splits' from CSM has size = cascadeCount + 1 and starts at near (splits[0]).
+            // - The shader expects cascade end distances: x=end of cascade0, y=end of cascade1, z=end of cascade2.
+            //   We put the camera far (end of last cascade) in .w for convenience.
+            sdata.splits = glm::vec4(0.0f);
+            if (splits.size() >= 2) sdata.splits.x = (float)splits[1];
+            if (splits.size() >= 3) sdata.splits.y = (float)splits[2];
+            if (splits.size() >= 4) sdata.splits.z = (float)splits[3];
+            if (splits.size() >= 5) sdata.splits.w = (float)splits[4];
+            else                    sdata.splits.w = sdata.splits.z; // fallback
+
+            // Allocate UBO
+            AllocatedBuffer shadowUBO = ctx->getResources()->create_buffer(sizeof(ShadowGPUData),
+                                                                           VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                                                                           VMA_MEMORY_USAGE_CPU_TO_GPU);
+            ctx->currentFrame->_deletionQueue.push_function([rm=ctx->getResources(), shadowUBO]() { rm->destroy_buffer(shadowUBO); });
+            {
+                VmaAllocationInfo ai{}; vmaGetAllocationInfo(ctx->getDevice()->allocator(), shadowUBO.allocation, &ai);
+                *static_cast<ShadowGPUData*>(ai.pMappedData) = sdata;
+                vmaFlushAllocation(ctx->getDevice()->allocator(), shadowUBO.allocation, 0, sizeof(ShadowGPUData));
+            }
+
+            VkDescriptorSet shadowSet = ctx->currentFrame->_frameDescriptors.allocate(ctx->getDevice()->device(), _shadowSetLayout);
+
+            // Build image infos for cascades
+            std::vector<VkDescriptorImageInfo> infos;
+            infos.reserve(cascades.size());
+            for (auto h : cascades)
+            {
+                VkImageView v = res.image_view(h);
+                if (v == VK_NULL_HANDLE) continue;
+                VkDescriptorImageInfo ii{};
+                ii.imageView = v;
+                ii.sampler = ctx->getSamplers()->shadowCompareSampler();
+                // RenderGraph puts depth images used for sampling into
+                // VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL (see rg_graph.cpp).
+                // Match the descriptor layout to the actual image layout to avoid UB.
+                ii.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+                infos.push_back(ii);
+            }
+
+            DescriptorWriter sw;
+            sw.write_buffer(0, shadowUBO.buffer, sizeof(ShadowGPUData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+            if (!infos.empty()) sw.write_images(1, infos, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+            sw.update_set(ctx->getDevice()->device(), shadowSet);
+
+            // Draw lighting while also binding the shadow descriptor set.
+            draw_lighting(cmd, ctx, res, drawHandle, shadowSet);
         });
 }
 
 void LightingPass::draw_lighting(VkCommandBuffer cmd,
                                  EngineContext *context,
                                  const RGPassResources &resources,
-                                 RGImageHandle drawHandle)
+                                 RGImageHandle drawHandle,
+                                 VkDescriptorSet shadowSet)
 {
     EngineContext *ctxLocal = context ? context : _context;
     if (!ctxLocal || !ctxLocal->currentFrame) return;
@@ -156,6 +254,10 @@ void LightingPass::draw_lighting(VkCommandBuffer cmd,
                             nullptr);
     vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 1, 1,
                             &_gBufferInputDescriptorSet, 0, nullptr);
+    if (shadowSet != VK_NULL_HANDLE)
+    {
+        vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 2, 1, &shadowSet, 0, nullptr);
+    }
 
     VkViewport viewport{};
     viewport.x = 0;

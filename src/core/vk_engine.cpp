@@ -25,6 +25,7 @@
 #include "render/vk_renderpass_geometry.h"
 #include "render/vk_renderpass_imgui.h"
 #include "render/vk_renderpass_lighting.h"
+#include "render/vk_renderpass_shadow_csm.h"
 #include "render/vk_renderpass_transparent.h"
 #include "render/vk_renderpass_tonemap.h"
 #include "vk_resource.h"
@@ -122,7 +123,7 @@ void VulkanEngine::init()
     auto imguiPass = std::make_unique<ImGuiPass>();
     _renderPassManager->setImGuiPass(std::move(imguiPass));
 
-    const std::string structurePath = _assetManager->modelPath("Benz.glb");
+    const std::string structurePath = _assetManager->modelPath("city.glb");
     const auto structureFile = _assetManager->loadGLTF(structurePath);
 
     assert(structureFile.has_value());
@@ -328,9 +329,33 @@ void VulkanEngine::draw()
             {
                 geometry->register_graph(_renderGraph.get(), hGBufferPosition, hGBufferNormal, hGBufferAlbedo, hDepth);
             }
+            if (auto *csm = _renderPassManager->getPass<CSMShadowPass>())
+            {
+                csm->register_graph(_renderGraph.get());
+            }
             if (auto *lighting = _renderPassManager->getPass<LightingPass>())
             {
-                lighting->register_graph(_renderGraph.get(), hDraw, hGBufferPosition, hGBufferNormal, hGBufferAlbedo);
+                std::vector<RGImageHandle> shadowImgs;
+                std::vector<float> shadowSplits;
+                uint32_t cascadeCount = 0;
+                uint32_t mapSize = 0;
+                if (auto *csm = _renderPassManager->getPass<CSMShadowPass>())
+                {
+                    shadowImgs = csm->shadow_images();
+                    shadowSplits = csm->splits();
+                    cascadeCount = csm->cascade_count();
+                    mapSize = csm->map_size();
+                }
+                const std::vector<glm::mat4> *lightVP = nullptr;
+                if (auto *csm2 = _renderPassManager->getPass<CSMShadowPass>())
+                {
+                    lightVP = &csm2->light_vp();
+                }
+                lighting->register_graph(_renderGraph.get(), hDraw, hGBufferPosition, hGBufferNormal, hGBufferAlbedo,
+                                         shadowImgs, shadowSplits, lightVP ? *lightVP : std::vector<glm::mat4>{},
+                                         cascadeCount, mapSize,
+                                         (_renderPassManager->getPass<CSMShadowPass>()) ? _renderPassManager->getPass<CSMShadowPass>()->config().sampleBias : 0.0015f,
+                                         (_renderPassManager->getPass<CSMShadowPass>()) ? _renderPassManager->getPass<CSMShadowPass>()->config().visualize : false);
             }
             if (auto *transparent = _renderPassManager->getPass<TransparentPass>())
             {
@@ -658,6 +683,34 @@ void VulkanEngine::run()
             else
             {
                 ImGui::TextUnformatted("Tonemap pass not available");
+            }
+            ImGui::End();
+        }
+
+        // Shadows window
+        if (ImGui::Begin("Shadows"))
+        {
+            if (auto *csm = _renderPassManager->getPass<CSMShadowPass>())
+            {
+                auto cfg = csm->config();
+                int casc = (int)cfg.cascades;
+                if (ImGui::SliderInt("Cascades", &casc, 1, 4)) { csm->set_cascade_count((uint32_t)casc); }
+                int mapSz = (int)cfg.mapSize;
+                if (ImGui::SliderInt("Map Size", &mapSz, 256, 4096)) { csm->set_map_size((uint32_t)mapSz); }
+                if (ImGui::SliderFloat("Max Distance", &cfg.maxDistance, 10.0f, 500.0f)) { csm->config() = cfg; }
+                if (ImGui::SliderFloat("Split Lambda", &cfg.splitLambda, 0.0f, 1.0f)) { csm->config() = cfg; }
+                if (ImGui::SliderFloat("Sample Bias", &cfg.sampleBias, 0.0f, 0.01f)) { csm->config() = cfg; }
+                ImGui::Checkbox("Visualize Shadow Term", &cfg.visualize); csm->config() = cfg;
+                ImGui::Text("Splits: near=%.2f  d1=%.2f  d2=%.2f  d3=%.2f  far=%.2f",
+                            csm->splits().size() > 0 ? csm->splits()[0] : 0.0f,
+                            csm->splits().size() > 1 ? csm->splits()[1] : 0.0f,
+                            csm->splits().size() > 2 ? csm->splits()[2] : 0.0f,
+                            csm->splits().size() > 3 ? csm->splits()[3] : 0.0f,
+                            csm->splits().size() > 4 ? csm->splits()[4] : 0.0f);
+            }
+            else
+            {
+                ImGui::TextUnformatted("CSM pass not available");
             }
             ImGui::End();
         }

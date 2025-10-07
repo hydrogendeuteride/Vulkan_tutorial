@@ -75,11 +75,19 @@ VkPipeline PipelineBuilder::build_pipeline(VkDevice device)
     colorBlending.logicOp = VK_LOGIC_OP_COPY;
     // For multiple color attachments (e.g., G-Buffer), we must provide one blend state per attachment.
     std::vector<VkPipelineColorBlendAttachmentState> blendAttachments;
-    uint32_t colorAttachmentCount = (uint32_t)_colorAttachmentFormats.size();
-    if (colorAttachmentCount == 0) colorAttachmentCount = 1; // fallback
-    blendAttachments.assign(colorAttachmentCount, _colorBlendAttachment);
-    colorBlending.attachmentCount = colorAttachmentCount;
-    colorBlending.pAttachments = blendAttachments.data();
+    const uint32_t colorAttachmentCount = (uint32_t)_colorAttachmentFormats.size();
+    if (colorAttachmentCount > 0)
+    {
+        blendAttachments.assign(colorAttachmentCount, _colorBlendAttachment);
+        colorBlending.attachmentCount = colorAttachmentCount;
+        colorBlending.pAttachments = blendAttachments.data();
+    }
+    else
+    {
+        // Depth-only pipelines: no color attachments or blend states
+        colorBlending.attachmentCount = 0;
+        colorBlending.pAttachments = nullptr;
+    }
     VkPipelineVertexInputStateCreateInfo _vertexInputInfo = {.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO};
 
     VkGraphicsPipelineCreateInfo pipelineInfo = {.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO};
