@@ -6,6 +6,7 @@
 #include "vk_renderpass_lighting.h"
 #include "vk_renderpass_transparent.h"
 #include "vk_renderpass_tonemap.h"
+#include "vk_renderpass_shadow.h"
 
 void RenderPassManager::init(EngineContext *context)
 {
@@ -14,6 +15,11 @@ void RenderPassManager::init(EngineContext *context)
     auto backgroundPass = std::make_unique<BackgroundPass>();
     backgroundPass->init(context);
     addPass(std::move(backgroundPass));
+
+    // Shadow map pass comes early in the frame
+    auto shadowPass = std::make_unique<ShadowPass>();
+    shadowPass->init(context);
+    addPass(std::move(shadowPass));
 
     auto geometryPass = std::make_unique<GeometryPass>();
     geometryPass->init(context);

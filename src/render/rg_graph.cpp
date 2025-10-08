@@ -43,6 +43,16 @@ RGImageHandle RenderGraph::create_image(const RGImageDesc &desc)
 	return _resources.add_transient(desc);
 }
 
+RGImageHandle RenderGraph::create_depth_image(const char* name, VkExtent2D extent, VkFormat format)
+{
+    RGImageDesc d{};
+    d.name = name ? name : "depth.transient";
+    d.format = format;
+    d.extent = extent;
+    d.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+    return create_image(d);
+}
+
 RGBufferHandle RenderGraph::create_buffer(const RGBufferDesc &desc)
 {
 	return _resources.add_transient(desc);
