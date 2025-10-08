@@ -355,6 +355,20 @@ void VulkanEngine::draw()
 
         _renderGraph->add_present_chain(finalColor, hSwapchain, appendPresentExtras);
 
+        // Ensure draw image ends the frame in GENERAL so next frame's import layout matches
+        // regardless of whether we sampled or copied from it.
+        _renderGraph->add_pass(
+            "RestoreDrawLayout",
+            RGPassType::Transfer,
+            [hDraw](RGPassBuilder &builder, EngineContext *) {
+                // Declare a write with ComputeWrite usage to drive a layout transition to GENERAL.
+                builder.write(hDraw, RGImageUsage::ComputeWrite);
+            },
+            [](VkCommandBuffer, const RGPassResources &, EngineContext *) {
+                // No commands needed; barrier only.
+            }
+        );
+
         // Apply persistent pass enable overrides
         for (size_t i = 0; i < _renderGraph->pass_count(); ++i)
         {

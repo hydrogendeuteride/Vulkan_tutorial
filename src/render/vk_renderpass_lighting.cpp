@@ -126,8 +126,22 @@ void LightingPass::draw_lighting(VkCommandBuffer cmd,
     VkImageView drawView = resources.image_view(drawHandle);
     if (drawView == VK_NULL_HANDLE) return;
 
-    // Re-fetch pipeline in case it was hot-reloaded
-    pipelineManager->getGraphics("deferred_lighting", _pipeline, _pipelineLayout);
+    // Re-fetch pipeline in case it was hot-reloaded. Only overwrite if valid.
+    {
+        VkPipeline p = VK_NULL_HANDLE;
+        VkPipelineLayout l = VK_NULL_HANDLE;
+        if (pipelineManager->getGraphics("deferred_lighting", p, l))
+        {
+            _pipeline = p;
+            _pipelineLayout = l;
+        }
+    }
+
+    // If pipeline or layout is invalid, skip to avoid access violation on bind.
+    if (_pipeline == VK_NULL_HANDLE || _pipelineLayout == VK_NULL_HANDLE)
+    {
+        return;
+    }
 
     // Dynamic rendering is handled by the RenderGraph using the declared draw attachment.
 

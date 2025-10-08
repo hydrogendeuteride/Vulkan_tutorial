@@ -29,6 +29,8 @@ void SwapchainManager::init_swapchain()
         drawImageUsages |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
         drawImageUsages |= VK_IMAGE_USAGE_STORAGE_BIT;
         drawImageUsages |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+        // HDR draw is sampled by Tonemap, so allow sampling
+        drawImageUsages |= VK_IMAGE_USAGE_SAMPLED_BIT;
 
         VkImageCreateInfo rimg_info = vkinit::image_create_info(_drawImage.imageFormat, drawImageUsages, drawImageExtent);
 
@@ -150,6 +152,7 @@ void SwapchainManager::resize_swapchain(struct SDL_Window *window)
     drawImageUsages |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
     drawImageUsages |= VK_IMAGE_USAGE_STORAGE_BIT;
     drawImageUsages |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    drawImageUsages |= VK_IMAGE_USAGE_SAMPLED_BIT; // sampled by Tonemap when enabled
 
     VkImageCreateInfo rimg_info = vkinit::image_create_info(_drawImage.imageFormat, drawImageUsages, drawImageExtent);
     VmaAllocationCreateInfo rimg_allocinfo = {};
