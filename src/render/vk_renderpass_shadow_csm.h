@@ -34,7 +34,8 @@ public:
     // Debug/config accessors
     struct Config
     {
-        uint32_t cascades = 4;
+        // Default to a single cascade for simple shadow mapping
+        uint32_t cascades = 1;
         uint32_t mapSize = 2048;
         float maxDistance = 150.0f; // meters
         float splitLambda = 0.6f; // 0=uniform, 1=log

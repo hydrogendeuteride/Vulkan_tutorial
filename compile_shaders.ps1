@@ -1,6 +1,6 @@
 Param(
   [string]$SrcDir = "shaders",
-  [string]$OutDir = "shaders_spv",
+  [string]$OutDir = "shaders",
   [string]$TargetEnv = "vulkan1.2",
   [string]$Opt = "-O",
   [string]$Debug = "",

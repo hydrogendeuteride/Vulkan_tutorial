@@ -84,13 +84,11 @@ void main(){
     float NdotL = max(dot(N, L), 0.0);
     vec3 irradiance = sceneData.sunlightColor.rgb * sceneData.sunlightColor.a * NdotL;
 
-    // Shadowing via CSM
-    float viewZ = -(sceneData.view * vec4(pos,1)).z;
-    int cascadeIdx = selectCascade(viewZ);
-    float visibility = sampleShadowPCF(cascadeIdx, pos, max(dot(N, L), 0.0));
+    // Simple single shadow map
+    float visibility = sampleShadowPCF(pos, max(dot(N, L), 0.0));
 
     // Debug visualization of shadow term
-    if (shadow.params.w > 0.5)
+    if (shadow.params.z > 0.5)
     {
         outColor = vec4(vec3(visibility), 1.0);
         return;

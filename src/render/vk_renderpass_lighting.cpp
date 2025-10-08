@@ -29,12 +29,11 @@ void LightingPass::init(EngineContext *context)
         _gBufferInputDescriptorLayout = builder.build(_context->getDevice()->device(), VK_SHADER_STAGE_FRAGMENT_BIT);
     }
 
-    // Build descriptor layout for Shadow inputs (set=2)
+    // Build descriptor layout for Shadow inputs (set=2) - single shadow map
     {
-        constexpr uint32_t NUM_CASCADES = 4; // must match shader include
         DescriptorLayoutBuilder builder;
         builder.add_binding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER); // ShadowData UBO
-        builder.add_binding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, NUM_CASCADES); // array
+        builder.add_binding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER); // single sampler2DShadow
         _shadowSetLayout = builder.build(_context->getDevice()->device(), VK_SHADER_STAGE_FRAGMENT_BIT);
     }
 
@@ -98,9 +97,9 @@ void LightingPass::register_graph(RenderGraph *graph,
                                   RGImageHandle gbufferNormal,
                                   RGImageHandle gbufferAlbedo,
                                   const std::vector<RGImageHandle>& shadowMaps,
-                                  const std::vector<float>& shadowSplits,
+                                  const std::vector<float>& /*shadowSplits*/,
                                   const std::vector<glm::mat4>& shadowLightVP,
-                                  uint32_t shadowCascadeCount,
+                                  uint32_t /*shadowCascadeCount*/,
                                   uint32_t shadowMapSize,
                                   float shadowSampleBias,
                                   bool visualizeShadow)
@@ -112,9 +111,7 @@ void LightingPass::register_graph(RenderGraph *graph,
 
     // Copy params for capture
     auto cascades = shadowMaps; // shallow copy of handles
-    auto splits = shadowSplits;
     auto lightVP = shadowLightVP;
-    uint32_t cascadeCount = shadowCascadeCount ? shadowCascadeCount : static_cast<uint32_t>(cascades.size());
     uint32_t mapSize = shadowMapSize;
     float sampleBias = shadowSampleBias;
     bool visualize = visualizeShadow;
@@ -131,7 +128,7 @@ void LightingPass::register_graph(RenderGraph *graph,
 
             builder.write_color(drawHandle);
         },
-        [this, drawHandle, cascades, splits, lightVP, cascadeCount, mapSize, sampleBias, visualize](VkCommandBuffer cmd, const RGPassResources &res, EngineContext *ctx)
+        [this, drawHandle, cascades, lightVP, mapSize, sampleBias, visualize](VkCommandBuffer cmd, const RGPassResources &res, EngineContext *ctx)
         {
             // Stash cascade handles in the context via closure by writing to a thread-local? Not needed.
             // We'll pass them through via member variables soon if required. For now, build shadow set inline.
@@ -143,28 +140,13 @@ void LightingPass::register_graph(RenderGraph *graph,
             // Prepare ShadowData UBO
             struct ShadowGPUData
             {
-                glm::mat4 lightVP[4];
-                glm::vec4 splits; // x=d1, y=d2, z=d3, w=d4 (far)
-                glm::vec4 params; // x=cascadeCount, y=mapSize, z=bias, w=unused
+                glm::mat4 lightVP;    // single VP matrix
+                glm::vec4 params;     // x=mapSize, y=bias, z=visualize, w=unused
             };
 
             ShadowGPUData sdata{};
-            sdata.params = glm::vec4((float)std::max(1u, cascadeCount), (float)std::max(1u, mapSize), sampleBias, visualize ? 1.0f : 0.0f);
-            for (uint32_t i = 0; i < 4; ++i)
-            {
-                if (i < lightVP.size()) sdata.lightVP[i] = lightVP[i];
-                else sdata.lightVP[i] = glm::mat4(1.0f);
-            }
-            // Map split distances:
-            // - 'splits' from CSM has size = cascadeCount + 1 and starts at near (splits[0]).
-            // - The shader expects cascade end distances: x=end of cascade0, y=end of cascade1, z=end of cascade2.
-            //   We put the camera far (end of last cascade) in .w for convenience.
-            sdata.splits = glm::vec4(0.0f);
-            if (splits.size() >= 2) sdata.splits.x = (float)splits[1];
-            if (splits.size() >= 3) sdata.splits.y = (float)splits[2];
-            if (splits.size() >= 4) sdata.splits.z = (float)splits[3];
-            if (splits.size() >= 5) sdata.splits.w = (float)splits[4];
-            else                    sdata.splits.w = sdata.splits.z; // fallback
+            sdata.params = glm::vec4((float)std::max(1u, mapSize), sampleBias, visualize ? 1.0f : 0.0f, 0.0f);
+            sdata.lightVP = (!lightVP.empty()) ? lightVP[0] : glm::mat4(1.0f);
 
             // Allocate UBO
             AllocatedBuffer shadowUBO = ctx->getResources()->create_buffer(sizeof(ShadowGPUData),
@@ -179,26 +161,19 @@ void LightingPass::register_graph(RenderGraph *graph,
 
             VkDescriptorSet shadowSet = ctx->currentFrame->_frameDescriptors.allocate(ctx->getDevice()->device(), _shadowSetLayout);
 
-            // Build image infos for cascades
-            std::vector<VkDescriptorImageInfo> infos;
-            infos.reserve(cascades.size());
-            for (auto h : cascades)
-            {
-                VkImageView v = res.image_view(h);
-                if (v == VK_NULL_HANDLE) continue;
-                VkDescriptorImageInfo ii{};
-                ii.imageView = v;
-                ii.sampler = ctx->getSamplers()->shadowCompareSampler();
-                // RenderGraph puts depth images used for sampling into
-                // VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL (see rg_graph.cpp).
-                // Match the descriptor layout to the actual image layout to avoid UB.
-                ii.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
-                infos.push_back(ii);
-            }
-
+            // Single shadow map (use first shadow image if any)
             DescriptorWriter sw;
             sw.write_buffer(0, shadowUBO.buffer, sizeof(ShadowGPUData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-            if (!infos.empty()) sw.write_images(1, infos, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+            if (!cascades.empty())
+            {
+                VkImageView v = res.image_view(cascades[0]);
+                if (v != VK_NULL_HANDLE)
+                {
+                    sw.write_image(1, v, ctx->getSamplers()->shadowCompareSampler(),
+                                   VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
+                                   VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+                }
+            }
             sw.update_set(ctx->getDevice()->device(), shadowSet);
 
             // Draw lighting while also binding the shadow descriptor set.

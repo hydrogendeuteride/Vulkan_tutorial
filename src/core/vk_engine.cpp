@@ -687,30 +687,23 @@ void VulkanEngine::run()
             ImGui::End();
         }
 
-        // Shadows window
+        // Shadows window (simple shadow map)
         if (ImGui::Begin("Shadows"))
         {
             if (auto *csm = _renderPassManager->getPass<CSMShadowPass>())
             {
                 auto cfg = csm->config();
-                int casc = (int)cfg.cascades;
-                if (ImGui::SliderInt("Cascades", &casc, 1, 4)) { csm->set_cascade_count((uint32_t)casc); }
+                // Force single cascade
+                cfg.cascades = 1;
                 int mapSz = (int)cfg.mapSize;
                 if (ImGui::SliderInt("Map Size", &mapSz, 256, 4096)) { csm->set_map_size((uint32_t)mapSz); }
                 if (ImGui::SliderFloat("Max Distance", &cfg.maxDistance, 10.0f, 500.0f)) { csm->config() = cfg; }
-                if (ImGui::SliderFloat("Split Lambda", &cfg.splitLambda, 0.0f, 1.0f)) { csm->config() = cfg; }
                 if (ImGui::SliderFloat("Sample Bias", &cfg.sampleBias, 0.0f, 0.01f)) { csm->config() = cfg; }
-                ImGui::Checkbox("Visualize Shadow Term", &cfg.visualize); csm->config() = cfg;
-                ImGui::Text("Splits: near=%.2f  d1=%.2f  d2=%.2f  d3=%.2f  far=%.2f",
-                            csm->splits().size() > 0 ? csm->splits()[0] : 0.0f,
-                            csm->splits().size() > 1 ? csm->splits()[1] : 0.0f,
-                            csm->splits().size() > 2 ? csm->splits()[2] : 0.0f,
-                            csm->splits().size() > 3 ? csm->splits()[3] : 0.0f,
-                            csm->splits().size() > 4 ? csm->splits()[4] : 0.0f);
+                ImGui::Checkbox("Visualize Shadow", &cfg.visualize); csm->config() = cfg;
             }
             else
             {
-                ImGui::TextUnformatted("CSM pass not available");
+                ImGui::TextUnformatted("Shadow pass not available");
             }
             ImGui::End();
         }
