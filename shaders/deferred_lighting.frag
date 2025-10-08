@@ -102,10 +102,10 @@ void main(){
             for (int dy = 0; dy <= 1; ++dy)
             for (int dx = 0; dx <= 1; ++dx)
             {
-                vec2 o = vec2(dx,dy) * texel;
-                float mapD = texture(shadowTex, suv + o).r;
-                // Reversed-Z compare: nearer -> larger depth
-                sum += (current + bias < mapD) ? 1.0 : 0.0;
+                vec2 base = (vec2(dx, dy) - vec2(0.5)) * texel;
+                float mapD = texture(shadowTex, suv + base).r;
+
+                sum += (current + bias >= mapD) ? 1.0 : 0.0;
             }
             visibility = sum * 0.25;
         }

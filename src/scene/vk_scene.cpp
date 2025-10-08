@@ -79,16 +79,15 @@ void SceneManager::update_scene()
     glm::mat4 view = mainCamera.getViewMatrix();
     // Use reversed infinite-Z projection (right-handed, -Z forward) to avoid far-plane clipping
     // on very large scenes. Vulkan clip space is 0..1 (GLM_FORCE_DEPTH_ZERO_TO_ONE) and requires Y flip.
-    auto makeReversedInfinitePerspective = [](float fovyRadians, float aspect, float zNear)
-    {
+    auto makeReversedInfinitePerspective = [](float fovyRadians, float aspect, float zNear) {
         // Column-major matrix; indices are [column][row]
         float f = 1.0f / tanf(fovyRadians * 0.5f);
         glm::mat4 m(0.0f);
         m[0][0] = f / aspect;
         m[1][1] = f;
         m[2][2] = 0.0f;
-        m[2][3] = -1.0f;     // w = -z_eye (right-handed)
-        m[3][2] = zNear;    // maps near -> 1, far -> 0 (reversed-Z)
+        m[2][3] = -1.0f; // w = -z_eye (right-handed)
+        m[3][2] = zNear; // maps near -> 1, far -> 0 (reversed-Z)
         return m;
     };
 
@@ -114,17 +113,21 @@ void SceneManager::update_scene()
         const glm::vec3 worldUp(0.0f, 1.0f, 0.0f);
         glm::vec3 right = glm::normalize(glm::cross(worldUp, L));
         glm::vec3 up = glm::normalize(glm::cross(L, right));
-        if (glm::length2(right) < 1e-6f) { right = glm::vec3(1,0,0); up = glm::normalize(glm::cross(L, right)); }
+        if (glm::length2(right) < 1e-6f)
+        {
+            right = glm::vec3(1, 0, 0);
+            up = glm::normalize(glm::cross(L, right));
+        }
 
-        const float orthoRange = 75.0f;   // XY half-extent
-        const float nearDist   = 0.1f;
-        const float farDist    = 200.0f;
-        const glm::vec3 lightPos = camPos - L * 500.0f;
+        const float orthoRange = 40.0f; // XY half-extent
+        const float nearDist = 0.1f;
+        const float farDist = 200.0f;
+        const glm::vec3 lightPos = camPos - L * 100.0f;
         glm::mat4 viewLight = glm::lookAtRH(lightPos, camPos, up);
-        // Reversed-Z: swap near/far to map near->1, far->0
+        // Standard RH ZO ortho with near<far, then explicitly flip Z to reversed-Z
         glm::mat4 projLight = glm::orthoRH_ZO(-orthoRange, orthoRange, -orthoRange, orthoRange,
-                                              farDist, nearDist);
-        projLight[1][1] *= -1.0f; // Vulkan NDC Y flip
+                                              nearDist, farDist);
+
         sceneData.lightViewProj = projLight * viewLight;
     }
 
