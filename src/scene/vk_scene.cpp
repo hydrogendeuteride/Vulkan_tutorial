@@ -11,7 +11,7 @@ void SceneManager::init(EngineContext *context)
     _context = context;
 
     mainCamera.velocity = glm::vec3(0.f);
-    mainCamera.position = glm::vec3(30.f, -00.f, -085.f);
+    mainCamera.position = glm::vec3(30.f, -00.f, 85.f);
     mainCamera.pitch = 0;
     mainCamera.yaw = 0;
 
@@ -74,8 +74,8 @@ void SceneManager::update_scene()
     }
 
     glm::mat4 view = mainCamera.getViewMatrix();
-    // Use reversed infinite-Z projection to avoid far-plane clipping on very large scenes.
-    // Vulkan clip space is 0..1 (GLM_FORCE_DEPTH_ZERO_TO_ONE) and requires Y flip.
+    // Use reversed infinite-Z projection (right-handed, -Z forward) to avoid far-plane clipping
+    // on very large scenes. Vulkan clip space is 0..1 (GLM_FORCE_DEPTH_ZERO_TO_ONE) and requires Y flip.
     auto makeReversedInfinitePerspective = [](float fovyRadians, float aspect, float zNear)
     {
         // Column-major matrix; indices are [column][row]
@@ -84,7 +84,7 @@ void SceneManager::update_scene()
         m[0][0] = f / aspect;
         m[1][1] = f;
         m[2][2] = 0.0f;
-        m[2][3] = 1.0f;     // w comes from z_eye
+        m[2][3] = -1.0f;     // w = -z_eye (right-handed)
         m[3][2] = zNear;    // maps near -> 1, far -> 0 (reversed-Z)
         return m;
     };

@@ -1,53 +1,62 @@
-Param(
-  [string]$SrcDir = "shaders",
-  [string]$OutDir = "shaders_spv",
-  [string]$TargetEnv = "vulkan1.2",
-  [string]$Opt = "-O",     #
-  [string]$Debug = "",     #
-  [string[]]$Includes = @("shaders/include"),
-  [string[]]$Defines  = @("MAX_LIGHTS=8"),
-  [string[]]$ExtraFlags = @()
+param(
+  [string]$ShaderDir = "shaders",
+  [string]$OutDir    = "shaders",
+  [string]$Glslc     = "glslc",
+  [string[]]$ExtraArgs = @(),
+  [switch]$Clean
 )
+$ErrorActionPreference = "Stop"
 
-$glslc = Get-Command glslc -ErrorAction SilentlyContinue
-if (-not $glslc) { Write-Error "glslc is not in PATH."; exit 1 }
+function Get-RelativePath([string]$BasePath, [string]$TargetPath) {
+  $baseUri   = [System.Uri](Resolve-Path $BasePath).Path
+  $targetUri = [System.Uri](Resolve-Path $TargetPath).Path
+  $relUri = $baseUri.MakeRelativeUri($targetUri)
+  return [System.Uri]::UnescapeDataString($relUri.ToString()).Replace('/', [System.IO.Path]::DirectorySeparatorChar)
+}
 
+$glslcCmd = Get-Command $Glslc -ErrorAction SilentlyContinue
+if (-not $glslcCmd) {
+  Write-Error "glslc not found. Please ensure glslc is in your PATH."
+  exit 127
+}
+
+if ($Clean -and (Test-Path $OutDir)) {
+  Write-Host "Cleaning: $OutDir"
+  Remove-Item -Recurse -Force $OutDir
+}
 New-Item -ItemType Directory -Force -Path $OutDir | Out-Null
 
-$flags = @()
-if ($Opt)   { $flags += $Opt }
-if ($Debug) { $flags += $Debug }
-$flags += "--target-env=$TargetEnv"
-$flags += ($Includes | ForEach-Object { "-I$_" })
-$flags += ($Defines  | ForEach-Object { "-D$_" })
-$flags += $ExtraFlags
+$stagePattern = '^\.(vert|frag|comp|geom|tesc|tese|mesh|task|rgen|rint|rahit|rchit|rmiss|rcall)$'
 
-$files = Get-ChildItem -Path $SrcDir -Recurse -Include *.vert,*.frag,*.comp -File
-$rebuilt = 0
+$shaderRoot = (Resolve-Path $ShaderDir).Path
+$files = Get-ChildItem -Path $shaderRoot -Recurse -File |
+        Where-Object { $_.Extension -match $stagePattern }
 
-foreach ($f in $files) {
-  $relPath = $f.FullName.Substring($f.FullName.IndexOf((Resolve-Path $SrcDir)))
+if (-not $files) {
+  Write-Host "No shaders to compile in $ShaderDir"
+  exit 0
+}
 
-  $rel = Resolve-Path $f.FullName -Relative  #
-  $rel = $rel -replace "^\.\\" , ""          #
-  $rel = $rel.Substring($SrcDir.Length + 1)  #
+$compiled = 0
+$failed   = 0
 
-  $out = Join-Path $OutDir ($rel + ".spv")
-  New-Item -ItemType Directory -Force -Path (Split-Path $out) | Out-Null
+foreach ($src in $files) {
+  $rel = Get-RelativePath $shaderRoot $src.FullName
+  $destDirRel = Split-Path $rel -Parent
+  $destDir = if ([string]::IsNullOrWhiteSpace($destDirRel)) { $OutDir } else { Join-Path $OutDir $destDirRel }
+  New-Item -ItemType Directory -Force -Path $destDir | Out-Null
 
-  $needBuild = -not (Test-Path $out)
-  if (-not $needBuild) {
-    $needBuild = ($f.LastWriteTime -gt (Get-Item $out).LastWriteTime)
-  }
+  $outFile = Join-Path $destDir ($src.BaseName + ".spv")
+  Write-Host ("Compiling: {0} -> {1}" -f $src.FullName, $outFile)
 
-  if ($needBuild) {
-    Write-Host "[build] $($f.FullName) -> $out"
-    & glslc @flags $f.FullName -o $out
-    if ($LASTEXITCODE -ne 0) { throw "glslc failure: $($f.FullName)" }
-    $rebuilt++
+  & $Glslc @ExtraArgs $src.FullName -o $outFile
+  if ($LASTEXITCODE -ne 0) {
+    Write-Warning ("Failed: {0}" -f $src.FullName)
+    $failed++
   } else {
-    Write-Host "[skip ] $($f.FullName) (up to date)"
+    $compiled++
   }
 }
 
-Write-Host ("completed: {0} / {1}. output: {2}" -f $files.Count, $rebuilt, $OutDir)
+Write-Host ("Complete: {0} succeeded, {1} failed" -f $compiled, $failed)
+if ($failed -gt 0) { exit 1 } else { exit 0 }
