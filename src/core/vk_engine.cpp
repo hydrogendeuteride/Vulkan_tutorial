@@ -339,7 +339,7 @@ void VulkanEngine::draw()
             }
             if (auto *lighting = _renderPassManager->getPass<LightingPass>())
             {
-                lighting->register_graph(_renderGraph.get(), hDraw, hGBufferPosition, hGBufferNormal, hGBufferAlbedo);
+                lighting->register_graph(_renderGraph.get(), hDraw, hGBufferPosition, hGBufferNormal, hGBufferAlbedo, hShadow);
             }
             if (auto *transparent = _renderPassManager->getPass<TransparentPass>())
             {

@@ -119,7 +119,7 @@ void SceneManager::update_scene()
         const float orthoRange = 75.0f;   // XY half-extent
         const float nearDist   = 0.1f;
         const float farDist    = 200.0f;
-        const glm::vec3 lightPos = camPos - L * 100.0f;
+        const glm::vec3 lightPos = camPos - L * 500.0f;
         glm::mat4 viewLight = glm::lookAtRH(lightPos, camPos, up);
         // Reversed-Z: swap near/far to map near->1, far->0
         glm::mat4 projLight = glm::orthoRH_ZO(-orthoRange, orthoRange, -orthoRange, orthoRange,
