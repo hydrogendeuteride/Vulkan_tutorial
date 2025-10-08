@@ -5,6 +5,9 @@
 #include "vk_swapchain.h"
 #include "core/engine_context.h"
 #include "glm/gtx/transform.hpp"
+#include <glm/gtc/matrix_transform.hpp>
+
+#include "glm/gtx/norm.inl"
 
 void SceneManager::init(EngineContext *context)
 {
@@ -100,6 +103,30 @@ void SceneManager::update_scene()
     sceneData.view = view;
     sceneData.proj = projection;
     sceneData.viewproj = projection * view;
+
+    // Build a simple directional light view-projection (reversed-Z orthographic)
+    // Centered around the camera for now (non-cascaded, non-stabilized)
+    {
+        const glm::vec3 camPos = glm::vec3(glm::inverse(view)[3]);
+        glm::vec3 L = glm::normalize(-glm::vec3(sceneData.sunlightDirection));
+        if (glm::length(L) < 1e-5f) L = glm::vec3(0.0f, -1.0f, 0.0f);
+
+        const glm::vec3 worldUp(0.0f, 1.0f, 0.0f);
+        glm::vec3 right = glm::normalize(glm::cross(worldUp, L));
+        glm::vec3 up = glm::normalize(glm::cross(L, right));
+        if (glm::length2(right) < 1e-6f) { right = glm::vec3(1,0,0); up = glm::normalize(glm::cross(L, right)); }
+
+        const float orthoRange = 75.0f;   // XY half-extent
+        const float nearDist   = 0.1f;
+        const float farDist    = 200.0f;
+        const glm::vec3 lightPos = camPos - L * 100.0f;
+        glm::mat4 viewLight = glm::lookAtRH(lightPos, camPos, up);
+        // Reversed-Z: swap near/far to map near->1, far->0
+        glm::mat4 projLight = glm::orthoRH_ZO(-orthoRange, orthoRange, -orthoRange, orthoRange,
+                                              farDist, nearDist);
+        projLight[1][1] *= -1.0f; // Vulkan NDC Y flip
+        sceneData.lightViewProj = projLight * viewLight;
+    }
 
     auto end = std::chrono::system_clock::now();
     auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end - start);

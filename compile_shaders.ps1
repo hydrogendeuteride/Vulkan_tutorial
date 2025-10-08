@@ -1,6 +1,6 @@
 param(
   [string]$ShaderDir = "shaders",
-  [string]$OutDir    = "shaders",
+  [string]$OutDir    = "..",
   [string]$Glslc     = "glslc",
   [string[]]$ExtraArgs = @(),
   [switch]$Clean
@@ -46,7 +46,7 @@ foreach ($src in $files) {
   $destDir = if ([string]::IsNullOrWhiteSpace($destDirRel)) { $OutDir } else { Join-Path $OutDir $destDirRel }
   New-Item -ItemType Directory -Force -Path $destDir | Out-Null
 
-  $outFile = Join-Path $destDir ($src.BaseName + ".spv")
+  $outFile = Join-Path $destDir ($src.Name + ".spv")
   Write-Host ("Compiling: {0} -> {1}" -f $src.FullName, $outFile)
 
   & $Glslc @ExtraArgs $src.FullName -o $outFile

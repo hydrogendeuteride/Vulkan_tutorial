@@ -27,6 +27,7 @@
 #include "render/vk_renderpass_lighting.h"
 #include "render/vk_renderpass_transparent.h"
 #include "render/vk_renderpass_tonemap.h"
+#include "render/vk_renderpass_shadow.h"
 #include "vk_resource.h"
 #include "engine_context.h"
 #include "core/vk_pipeline_manager.h"
@@ -313,6 +314,10 @@ void VulkanEngine::draw()
         RGImageHandle hGBufferAlbedo = _renderGraph->import_gbuffer_albedo();
         RGImageHandle hSwapchain = _renderGraph->import_swapchain_image(swapchainImageIndex);
 
+        // Create a transient shadow depth target (fixed resolution for now)
+        const VkExtent2D shadowExtent{2048, 2048};
+        RGImageHandle hShadow = _renderGraph->create_depth_image("shadow.depth", shadowExtent, VK_FORMAT_D32_SFLOAT);
+
         _resourceManager->register_upload_pass(*_renderGraph, get_current_frame());
 
         ImGuiPass *imguiPass = nullptr;
@@ -323,6 +328,10 @@ void VulkanEngine::draw()
             if (auto *background = _renderPassManager->getPass<BackgroundPass>())
             {
                 background->register_graph(_renderGraph.get(), hDraw, hDepth);
+            }
+            if (auto *shadow = _renderPassManager->getPass<ShadowPass>())
+            {
+                shadow->register_graph(_renderGraph.get(), hShadow, shadowExtent);
             }
             if (auto *geometry = _renderPassManager->getPass<GeometryPass>())
             {
