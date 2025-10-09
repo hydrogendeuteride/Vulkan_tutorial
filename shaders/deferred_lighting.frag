@@ -12,6 +12,76 @@ layout(set=2, binding=0) uniform sampler2D shadowTex;
 
 const float PI = 3.14159265359;
 
+float hash12(vec2 p)
+{
+    vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+    p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z);
+}
+
+const vec2 POISSON_16[16] = vec2[16](
+    vec2(0.2852, -0.1883), vec2(-0.1464, 0.2591),
+    vec2(-0.3651, -0.0974), vec2(0.0901, 0.3807),
+    vec2(0.4740, 0.0679), vec2(-0.0512, -0.4466),
+    vec2(-0.4497, 0.1673), vec2(0.3347, 0.3211),
+    vec2(0.1948, -0.4196), vec2(-0.2919, -0.3291),
+    vec2(-0.0763, 0.4661), vec2(0.4421, -0.2217),
+    vec2(0.0281, -0.2468), vec2(-0.2104, 0.0573),
+    vec2(0.1197, 0.0779), vec2(-0.0905, -0.1203)
+);
+
+float calcShadowVisibility(vec3 worldPos, vec3 N, vec3 L)
+{
+    vec4 lclip = sceneData.lightViewProj * vec4(worldPos, 1.0);
+    vec3 ndc  = lclip.xyz / lclip.w;
+    vec2 suv  = ndc.xy * 0.5 + 0.5;
+
+    if (any(lessThan(suv, vec2(0.0))) || any(greaterThan(suv, vec2(1.0))))
+    return 1.0;
+
+    float current = clamp(ndc.z, 0.0, 1.0);
+
+    float NoL       = max(dot(N, L), 0.0);
+    float slopeBias = max(0.0006 * (1.0 - NoL), 0.0001);
+
+    float dzdx = dFdx(current);
+    float dzdy = dFdy(current);
+    float ddz  = max(abs(dzdx), abs(dzdy));
+    float bias = slopeBias + ddz * 0.75;
+
+    ivec2 dim       = textureSize(shadowTex, 0);
+    vec2  texelSize = 1.0 / vec2(dim);
+
+    float baseRadius = 1.25;
+    float radius     = mix(baseRadius, baseRadius * 4.0, current);
+
+    float ang = hash12(suv * 4096.0) * 6.2831853;
+    vec2  r   = vec2(cos(ang), sin(ang));
+    mat2  rot = mat2(r.x, -r.y, r.y, r.x);
+
+    const int TAP_COUNT = 16;
+    float occluded = 0.0;
+    float wsum     = 0.0;
+
+    for (int i = 0; i < TAP_COUNT; ++i)
+    {
+        vec2  pu   = rot * POISSON_16[i];
+        vec2  off  = pu * radius * texelSize;
+
+        float pr   = length(pu);
+        float w    = 1.0 - smoothstep(0.0, 0.65, pr);
+
+        float mapD = texture(shadowTex, suv + off).r;
+
+        float occ  = step(current + bias, mapD);
+
+        occluded += occ * w;
+        wsum     += w;
+    }
+
+    float shadow = (wsum > 0.0) ? (occluded / wsum) : 0.0;
+    return 1.0 - shadow;
+}
+
 vec3 fresnelSchlick(float cosTheta, vec3 F0)
 {
     return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
@@ -83,37 +153,7 @@ void main(){
 
     float NdotL = max(dot(N, L), 0.0);
     // Shadowing (directional, reversed-Z shadow map)
-    float visibility = 1.0;
-    {
-        vec4 lclip = sceneData.lightViewProj * vec4(pos, 1.0);
-        vec3 ndc  = lclip.xyz / lclip.w;           // x,y in [-1,1], z in [0,1] (ZO)
-        vec2 suv  = ndc.xy * 0.5 + 0.5;
-
-        // Basic bounds check
-        if (all(greaterThanEqual(suv, vec2(0.0))) && all(lessThanEqual(suv, vec2(1.0))))
-        {
-            float current = clamp(ndc.z, 0.0, 1.0);
-            float NoL = max(dot(N, L), 0.0);
-            float bias = max(0.0005 * (1.0 - NoL), 0.0001);
-
-            // 2x2 PCF (manual, non-compare sampler); tuned for 2048 size
-            const float texel = 1.0 / 2048.0;
-            float sum = 0.0;
-            for (int dy = 0; dy <= 1; ++dy)
-            for (int dx = 0; dx <= 1; ++dx)
-            {
-                vec2 base = (vec2(dx, dy) - vec2(0.5)) * texel;
-                float mapD = texture(shadowTex, suv + base).r;
-
-                sum += (current + bias >= mapD) ? 1.0 : 0.0;
-            }
-            visibility = sum * 0.25;
-        }
-        else
-        {
-            visibility = 1.0; // outside light frustum -> lit
-        }
-    }
+    float visibility = calcShadowVisibility(pos, N, L);
 
     vec3 irradiance = sceneData.sunlightColor.rgb * sceneData.sunlightColor.a * NdotL * visibility;
 
