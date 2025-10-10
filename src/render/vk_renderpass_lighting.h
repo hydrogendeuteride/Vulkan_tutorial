@@ -17,13 +17,15 @@ public:
                         RGImageHandle drawHandle,
                         RGImageHandle gbufferPosition,
                         RGImageHandle gbufferNormal,
-                        RGImageHandle gbufferAlbedo);
+                        RGImageHandle gbufferAlbedo,
+                        RGImageHandle shadowDepth);
 
 private:
     EngineContext *_context = nullptr;
 
     VkDescriptorSetLayout _gBufferInputDescriptorLayout = VK_NULL_HANDLE;
     VkDescriptorSet _gBufferInputDescriptorSet = VK_NULL_HANDLE;
+    VkDescriptorSetLayout _shadowDescriptorLayout = VK_NULL_HANDLE; // set=2
 
     VkPipelineLayout _pipelineLayout = VK_NULL_HANDLE;
     VkPipeline _pipeline = VK_NULL_HANDLE;
@@ -31,7 +33,8 @@ private:
     void draw_lighting(VkCommandBuffer cmd,
                        EngineContext *context,
                        const class RGPassResources &resources,
-                       RGImageHandle drawHandle);
+                       RGImageHandle drawHandle,
+                       RGImageHandle shadowDepth);
 
     DeletionQueue _deletionQueue;
 };

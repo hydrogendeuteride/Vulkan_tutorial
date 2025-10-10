@@ -43,10 +43,18 @@ void LightingPass::init(EngineContext *context)
         writer.update_set(_context->getDevice()->device(), _gBufferInputDescriptorSet);
     }
 
+    // Shadow map descriptor layout (set = 2, updated per-frame)
+    {
+        DescriptorLayoutBuilder builder;
+        builder.add_binding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+        _shadowDescriptorLayout = builder.build(_context->getDevice()->device(), VK_SHADER_STAGE_FRAGMENT_BIT);
+    }
+
     // Build lighting pipeline through PipelineManager
     VkDescriptorSetLayout layouts[] = {
         _context->getDescriptorLayouts()->gpuSceneDataLayout(),
-        _gBufferInputDescriptorLayout
+        _gBufferInputDescriptorLayout,
+        _shadowDescriptorLayout
     };
 
     GraphicsPipelineCreateInfo info{};
@@ -73,6 +81,7 @@ void LightingPass::init(EngineContext *context)
     _deletionQueue.push_function([&]() {
         // Pipelines are owned by PipelineManager; only destroy our local descriptor set layout
         vkDestroyDescriptorSetLayout(_context->getDevice()->device(), _gBufferInputDescriptorLayout, nullptr);
+        vkDestroyDescriptorSetLayout(_context->getDevice()->device(), _shadowDescriptorLayout, nullptr);
     });
 }
 
@@ -85,9 +94,10 @@ void LightingPass::register_graph(RenderGraph *graph,
                                   RGImageHandle drawHandle,
                                   RGImageHandle gbufferPosition,
                                   RGImageHandle gbufferNormal,
-                                  RGImageHandle gbufferAlbedo)
+                                  RGImageHandle gbufferAlbedo,
+                                  RGImageHandle shadowDepth)
 {
-    if (!graph || !drawHandle.valid() || !gbufferPosition.valid() || !gbufferNormal.valid() || !gbufferAlbedo.valid())
+    if (!graph || !drawHandle.valid() || !gbufferPosition.valid() || !gbufferNormal.valid() || !gbufferAlbedo.valid() || !shadowDepth.valid())
     {
         return;
     }
@@ -95,24 +105,26 @@ void LightingPass::register_graph(RenderGraph *graph,
     graph->add_pass(
         "Lighting",
         RGPassType::Graphics,
-        [drawHandle, gbufferPosition, gbufferNormal, gbufferAlbedo](RGPassBuilder &builder, EngineContext *)
+        [drawHandle, gbufferPosition, gbufferNormal, gbufferAlbedo, shadowDepth](RGPassBuilder &builder, EngineContext *)
         {
             builder.read(gbufferPosition, RGImageUsage::SampledFragment);
             builder.read(gbufferNormal, RGImageUsage::SampledFragment);
             builder.read(gbufferAlbedo, RGImageUsage::SampledFragment);
+            builder.read(shadowDepth, RGImageUsage::SampledFragment);
 
             builder.write_color(drawHandle);
         },
-        [this, drawHandle](VkCommandBuffer cmd, const RGPassResources &res, EngineContext *ctx)
+        [this, drawHandle, shadowDepth](VkCommandBuffer cmd, const RGPassResources &res, EngineContext *ctx)
         {
-            draw_lighting(cmd, ctx, res, drawHandle);
+            draw_lighting(cmd, ctx, res, drawHandle, shadowDepth);
         });
 }
 
 void LightingPass::draw_lighting(VkCommandBuffer cmd,
                                  EngineContext *context,
                                  const RGPassResources &resources,
-                                 RGImageHandle drawHandle)
+                                 RGImageHandle drawHandle,
+                                 RGImageHandle shadowDepth)
 {
     EngineContext *ctxLocal = context ? context : _context;
     if (!ctxLocal || !ctxLocal->currentFrame) return;
@@ -156,6 +168,19 @@ void LightingPass::draw_lighting(VkCommandBuffer cmd,
                             nullptr);
     vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 1, 1,
                             &_gBufferInputDescriptorSet, 0, nullptr);
+
+    // Allocate and write shadow descriptor set for this frame (set = 2)
+    VkDescriptorSet shadowSet = ctxLocal->currentFrame->_frameDescriptors.allocate(
+        deviceManager->device(), _shadowDescriptorLayout);
+    {
+        VkImageView shadowView = resources.image_view(shadowDepth);
+        DescriptorWriter writer2;
+        writer2.write_image(0, shadowView, ctxLocal->getSamplers()->defaultLinear(),
+                            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                            VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+        writer2.update_set(deviceManager->device(), shadowSet);
+    }
+    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 2, 1, &shadowSet, 0, nullptr);
 
     VkViewport viewport{};
     viewport.x = 0;

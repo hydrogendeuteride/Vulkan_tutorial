@@ -24,6 +24,10 @@ public:
 	// Create transient images (not used in v1 skeleton; stubbed for future)
 	RGImageHandle create_image(const RGImageDesc& desc);
 
+	// Convenience: create a transient depth image suitable for shadow mapping or depth-only passes
+	// Format defaults to D32_SFLOAT; usage is depth attachment + sampled so it can be read later.
+	RGImageHandle create_depth_image(const char* name, VkExtent2D extent, VkFormat format = VK_FORMAT_D32_SFLOAT);
+
 	// Buffer import/create helpers
 	RGBufferHandle import_buffer(const RGImportedBufferDesc& desc);
 	RGBufferHandle create_buffer(const RGBufferDesc& desc);

@@ -27,6 +27,7 @@
 #include "render/vk_renderpass_lighting.h"
 #include "render/vk_renderpass_transparent.h"
 #include "render/vk_renderpass_tonemap.h"
+#include "render/vk_renderpass_shadow.h"
 #include "vk_resource.h"
 #include "engine_context.h"
 #include "core/vk_pipeline_manager.h"
@@ -122,7 +123,7 @@ void VulkanEngine::init()
     auto imguiPass = std::make_unique<ImGuiPass>();
     _renderPassManager->setImGuiPass(std::move(imguiPass));
 
-    const std::string structurePath = _assetManager->modelPath("Benz.glb");
+    const std::string structurePath = _assetManager->modelPath("seoul_high.glb");
     const auto structureFile = _assetManager->loadGLTF(structurePath);
 
     assert(structureFile.has_value());
@@ -313,6 +314,10 @@ void VulkanEngine::draw()
         RGImageHandle hGBufferAlbedo = _renderGraph->import_gbuffer_albedo();
         RGImageHandle hSwapchain = _renderGraph->import_swapchain_image(swapchainImageIndex);
 
+        // Create a transient shadow depth target (fixed resolution for now)
+        const VkExtent2D shadowExtent{2048, 2048};
+        RGImageHandle hShadow = _renderGraph->create_depth_image("shadow.depth", shadowExtent, VK_FORMAT_D32_SFLOAT);
+
         _resourceManager->register_upload_pass(*_renderGraph, get_current_frame());
 
         ImGuiPass *imguiPass = nullptr;
@@ -324,13 +329,17 @@ void VulkanEngine::draw()
             {
                 background->register_graph(_renderGraph.get(), hDraw, hDepth);
             }
+            if (auto *shadow = _renderPassManager->getPass<ShadowPass>())
+            {
+                shadow->register_graph(_renderGraph.get(), hShadow, shadowExtent);
+            }
             if (auto *geometry = _renderPassManager->getPass<GeometryPass>())
             {
                 geometry->register_graph(_renderGraph.get(), hGBufferPosition, hGBufferNormal, hGBufferAlbedo, hDepth);
             }
             if (auto *lighting = _renderPassManager->getPass<LightingPass>())
             {
-                lighting->register_graph(_renderGraph.get(), hDraw, hGBufferPosition, hGBufferNormal, hGBufferAlbedo);
+                lighting->register_graph(_renderGraph.get(), hDraw, hGBufferPosition, hGBufferNormal, hGBufferAlbedo, hShadow);
             }
             if (auto *transparent = _renderPassManager->getPass<TransparentPass>())
             {
@@ -730,4 +739,3 @@ void MeshNode::Draw(const glm::mat4 &topMatrix, DrawContext &ctx)
     // recurse down
     Node::Draw(topMatrix, ctx);
 }
-

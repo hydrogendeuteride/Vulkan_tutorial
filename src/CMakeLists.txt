@@ -46,6 +46,8 @@ add_executable (engine
   render/vk_renderpass_geometry.cpp
   render/vk_renderpass_lighting.h
   render/vk_renderpass_lighting.cpp
+  render/vk_renderpass_shadow.h
+  render/vk_renderpass_shadow.cpp
   render/vk_renderpass_transparent.h
   render/vk_renderpass_transparent.cpp
   render/vk_renderpass_imgui.h
