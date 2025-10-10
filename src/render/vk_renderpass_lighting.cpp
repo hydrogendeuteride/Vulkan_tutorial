@@ -20,21 +20,13 @@ void LightingPass::init(EngineContext *context)
 {
     _context = context;
 
-    // Build descriptor layout for GBuffer inputs (set=1)
+    // Build descriptor layout for GBuffer inputs
     {
         DescriptorLayoutBuilder builder;
         builder.add_binding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
         builder.add_binding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
         builder.add_binding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
         _gBufferInputDescriptorLayout = builder.build(_context->getDevice()->device(), VK_SHADER_STAGE_FRAGMENT_BIT);
-    }
-
-    // Build descriptor layout for Shadow inputs (set=2) - single shadow map
-    {
-        DescriptorLayoutBuilder builder;
-        builder.add_binding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER); // ShadowData UBO
-        builder.add_binding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER); // single sampler2DShadow
-        _shadowSetLayout = builder.build(_context->getDevice()->device(), VK_SHADER_STAGE_FRAGMENT_BIT);
     }
 
     // Allocate and write GBuffer descriptor set
@@ -54,8 +46,7 @@ void LightingPass::init(EngineContext *context)
     // Build lighting pipeline through PipelineManager
     VkDescriptorSetLayout layouts[] = {
         _context->getDescriptorLayouts()->gpuSceneDataLayout(),
-        _gBufferInputDescriptorLayout,
-        _shadowSetLayout
+        _gBufferInputDescriptorLayout
     };
 
     GraphicsPipelineCreateInfo info{};
@@ -82,7 +73,6 @@ void LightingPass::init(EngineContext *context)
     _deletionQueue.push_function([&]() {
         // Pipelines are owned by PipelineManager; only destroy our local descriptor set layout
         vkDestroyDescriptorSetLayout(_context->getDevice()->device(), _gBufferInputDescriptorLayout, nullptr);
-        vkDestroyDescriptorSetLayout(_context->getDevice()->device(), _shadowSetLayout, nullptr);
     });
 }
 
@@ -95,97 +85,34 @@ void LightingPass::register_graph(RenderGraph *graph,
                                   RGImageHandle drawHandle,
                                   RGImageHandle gbufferPosition,
                                   RGImageHandle gbufferNormal,
-                                  RGImageHandle gbufferAlbedo,
-                                  const std::vector<RGImageHandle>& shadowMaps,
-                                  const std::vector<float>& /*shadowSplits*/,
-                                  const std::vector<glm::mat4>& shadowLightVP,
-                                  uint32_t /*shadowCascadeCount*/,
-                                  uint32_t shadowMapSize,
-                                  float shadowSampleBias,
-                                  bool visualizeShadow)
+                                  RGImageHandle gbufferAlbedo)
 {
     if (!graph || !drawHandle.valid() || !gbufferPosition.valid() || !gbufferNormal.valid() || !gbufferAlbedo.valid())
     {
         return;
     }
 
-    // Copy params for capture
-    auto cascades = shadowMaps; // shallow copy of handles
-    auto lightVP = shadowLightVP;
-    uint32_t mapSize = shadowMapSize;
-    float sampleBias = shadowSampleBias;
-    bool visualize = visualizeShadow;
-
     graph->add_pass(
         "Lighting",
         RGPassType::Graphics,
-        [drawHandle, gbufferPosition, gbufferNormal, gbufferAlbedo, cascades](RGPassBuilder &builder, EngineContext *)
+        [drawHandle, gbufferPosition, gbufferNormal, gbufferAlbedo](RGPassBuilder &builder, EngineContext *)
         {
             builder.read(gbufferPosition, RGImageUsage::SampledFragment);
             builder.read(gbufferNormal, RGImageUsage::SampledFragment);
             builder.read(gbufferAlbedo, RGImageUsage::SampledFragment);
-            for (auto h : cascades) { if (h) builder.read(h, RGImageUsage::SampledFragment); }
 
             builder.write_color(drawHandle);
         },
-        [this, drawHandle, cascades, lightVP, mapSize, sampleBias, visualize](VkCommandBuffer cmd, const RGPassResources &res, EngineContext *ctx)
+        [this, drawHandle](VkCommandBuffer cmd, const RGPassResources &res, EngineContext *ctx)
         {
-            // Stash cascade handles in the context via closure by writing to a thread-local? Not needed.
-            // We'll pass them through via member variables soon if required. For now, build shadow set inline.
-            // We forward to draw_lighting which will only handle core pipeline + gbuffer; 
-            // shadow descriptors are bound here before drawing.
-
-            if (!ctx || !ctx->currentFrame) return;
-
-            // Prepare ShadowData UBO
-            struct ShadowGPUData
-            {
-                glm::mat4 lightVP;    // single VP matrix
-                glm::vec4 params;     // x=mapSize, y=bias, z=visualize, w=unused
-            };
-
-            ShadowGPUData sdata{};
-            sdata.params = glm::vec4((float)std::max(1u, mapSize), sampleBias, visualize ? 1.0f : 0.0f, 0.0f);
-            sdata.lightVP = (!lightVP.empty()) ? lightVP[0] : glm::mat4(1.0f);
-
-            // Allocate UBO
-            AllocatedBuffer shadowUBO = ctx->getResources()->create_buffer(sizeof(ShadowGPUData),
-                                                                           VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                                                                           VMA_MEMORY_USAGE_CPU_TO_GPU);
-            ctx->currentFrame->_deletionQueue.push_function([rm=ctx->getResources(), shadowUBO]() { rm->destroy_buffer(shadowUBO); });
-            {
-                VmaAllocationInfo ai{}; vmaGetAllocationInfo(ctx->getDevice()->allocator(), shadowUBO.allocation, &ai);
-                *static_cast<ShadowGPUData*>(ai.pMappedData) = sdata;
-                vmaFlushAllocation(ctx->getDevice()->allocator(), shadowUBO.allocation, 0, sizeof(ShadowGPUData));
-            }
-
-            VkDescriptorSet shadowSet = ctx->currentFrame->_frameDescriptors.allocate(ctx->getDevice()->device(), _shadowSetLayout);
-
-            // Single shadow map (use first shadow image if any)
-            DescriptorWriter sw;
-            sw.write_buffer(0, shadowUBO.buffer, sizeof(ShadowGPUData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-            if (!cascades.empty())
-            {
-                VkImageView v = res.image_view(cascades[0]);
-                if (v != VK_NULL_HANDLE)
-                {
-                    sw.write_image(1, v, ctx->getSamplers()->shadowCompareSampler(),
-                                   VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
-                                   VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-                }
-            }
-            sw.update_set(ctx->getDevice()->device(), shadowSet);
-
-            // Draw lighting while also binding the shadow descriptor set.
-            draw_lighting(cmd, ctx, res, drawHandle, shadowSet);
+            draw_lighting(cmd, ctx, res, drawHandle);
         });
 }
 
 void LightingPass::draw_lighting(VkCommandBuffer cmd,
                                  EngineContext *context,
                                  const RGPassResources &resources,
-                                 RGImageHandle drawHandle,
-                                 VkDescriptorSet shadowSet)
+                                 RGImageHandle drawHandle)
 {
     EngineContext *ctxLocal = context ? context : _context;
     if (!ctxLocal || !ctxLocal->currentFrame) return;
@@ -229,10 +156,6 @@ void LightingPass::draw_lighting(VkCommandBuffer cmd,
                             nullptr);
     vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 1, 1,
                             &_gBufferInputDescriptorSet, 0, nullptr);
-    if (shadowSet != VK_NULL_HANDLE)
-    {
-        vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 2, 1, &shadowSet, 0, nullptr);
-    }
 
     VkViewport viewport{};
     viewport.x = 0;

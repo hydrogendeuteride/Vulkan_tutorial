@@ -8,7 +8,6 @@ struct DescriptorLayoutBuilder
     std::vector<VkDescriptorSetLayoutBinding> bindings;
 
     void add_binding(uint32_t binding, VkDescriptorType type);
-    void add_binding(uint32_t binding, VkDescriptorType type, uint32_t count);
 
     void clear();
 
@@ -18,15 +17,11 @@ struct DescriptorLayoutBuilder
 
 struct DescriptorWriter
 {
-    std::vector<VkDescriptorImageInfo> imageInfos; // must be contiguous for array writes
+    std::deque<VkDescriptorImageInfo> imageInfos;
     std::deque<VkDescriptorBufferInfo> bufferInfos;
     std::vector<VkWriteDescriptorSet> writes;
 
     void write_image(int binding, VkImageView image, VkSampler sampler, VkImageLayout layout, VkDescriptorType type);
-
-    // Write an array of images to a single binding (descriptorCount = infos.size()).
-    // The caller must keep the infos alive until update_set is called (we store a copy internally).
-    void write_images(int binding, std::span<VkDescriptorImageInfo> infos, VkDescriptorType type);
 
     void write_buffer(int binding, VkBuffer buffer, size_t size, size_t offset, VkDescriptorType type);
 

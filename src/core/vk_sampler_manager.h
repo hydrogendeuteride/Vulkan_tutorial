@@ -13,11 +13,10 @@ public:
 
     VkSampler defaultLinear() const { return _defaultSamplerLinear; }
     VkSampler defaultNearest() const { return _defaultSamplerNearest; }
-    VkSampler shadowCompareSampler() const { return _shadowCompare; }
 
 private:
     DeviceManager *_deviceManager = nullptr;
     VkSampler _defaultSamplerLinear = VK_NULL_HANDLE;
     VkSampler _defaultSamplerNearest = VK_NULL_HANDLE;
-    VkSampler _shadowCompare = VK_NULL_HANDLE;
 };
+

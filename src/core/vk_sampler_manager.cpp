@@ -28,22 +28,6 @@ void SamplerManager::init(DeviceManager *deviceManager)
     sampl.magFilter = VK_FILTER_LINEAR;
     sampl.minFilter = VK_FILTER_LINEAR;
     vkCreateSampler(_deviceManager->device(), &sampl, nullptr, &_defaultSamplerLinear);
-
-    // Comparison sampler for shadow maps (sampler2DShadow)
-    VkSamplerCreateInfo cmp{.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
-    cmp.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
-    cmp.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
-    cmp.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
-    cmp.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE; // outside shadow maps = lit
-    cmp.compareEnable = VK_TRUE;
-    cmp.compareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
-    cmp.magFilter = VK_FILTER_LINEAR; // hardware PCF requires linear
-    cmp.minFilter = VK_FILTER_LINEAR;
-    cmp.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
-    cmp.maxLod = 0.0f;
-    cmp.minLod = 0.0f;
-    cmp.unnormalizedCoordinates = VK_FALSE;
-    vkCreateSampler(_deviceManager->device(), &cmp, nullptr, &_shadowCompare);
 }
 
 void SamplerManager::cleanup()
@@ -59,10 +43,5 @@ void SamplerManager::cleanup()
     {
         vkDestroySampler(_deviceManager->device(), _defaultSamplerLinear, nullptr);
         _defaultSamplerLinear = VK_NULL_HANDLE;
-    }
-    if (_shadowCompare)
-    {
-        vkDestroySampler(_deviceManager->device(), _shadowCompare, nullptr);
-        _shadowCompare = VK_NULL_HANDLE;
     }
 }

@@ -25,7 +25,6 @@
 #include "render/vk_renderpass_geometry.h"
 #include "render/vk_renderpass_imgui.h"
 #include "render/vk_renderpass_lighting.h"
-#include "render/vk_renderpass_shadow_csm.h"
 #include "render/vk_renderpass_transparent.h"
 #include "render/vk_renderpass_tonemap.h"
 #include "vk_resource.h"
@@ -123,7 +122,7 @@ void VulkanEngine::init()
     auto imguiPass = std::make_unique<ImGuiPass>();
     _renderPassManager->setImGuiPass(std::move(imguiPass));
 
-    const std::string structurePath = _assetManager->modelPath("city.glb");
+    const std::string structurePath = _assetManager->modelPath("Benz.glb");
     const auto structureFile = _assetManager->loadGLTF(structurePath);
 
     assert(structureFile.has_value());
@@ -329,33 +328,9 @@ void VulkanEngine::draw()
             {
                 geometry->register_graph(_renderGraph.get(), hGBufferPosition, hGBufferNormal, hGBufferAlbedo, hDepth);
             }
-            if (auto *csm = _renderPassManager->getPass<CSMShadowPass>())
-            {
-                csm->register_graph(_renderGraph.get());
-            }
             if (auto *lighting = _renderPassManager->getPass<LightingPass>())
             {
-                std::vector<RGImageHandle> shadowImgs;
-                std::vector<float> shadowSplits;
-                uint32_t cascadeCount = 0;
-                uint32_t mapSize = 0;
-                if (auto *csm = _renderPassManager->getPass<CSMShadowPass>())
-                {
-                    shadowImgs = csm->shadow_images();
-                    shadowSplits = csm->splits();
-                    cascadeCount = csm->cascade_count();
-                    mapSize = csm->map_size();
-                }
-                const std::vector<glm::mat4> *lightVP = nullptr;
-                if (auto *csm2 = _renderPassManager->getPass<CSMShadowPass>())
-                {
-                    lightVP = &csm2->light_vp();
-                }
-                lighting->register_graph(_renderGraph.get(), hDraw, hGBufferPosition, hGBufferNormal, hGBufferAlbedo,
-                                         shadowImgs, shadowSplits, lightVP ? *lightVP : std::vector<glm::mat4>{},
-                                         cascadeCount, mapSize,
-                                         (_renderPassManager->getPass<CSMShadowPass>()) ? _renderPassManager->getPass<CSMShadowPass>()->config().sampleBias : 0.0015f,
-                                         (_renderPassManager->getPass<CSMShadowPass>()) ? _renderPassManager->getPass<CSMShadowPass>()->config().visualize : false);
+                lighting->register_graph(_renderGraph.get(), hDraw, hGBufferPosition, hGBufferNormal, hGBufferAlbedo);
             }
             if (auto *transparent = _renderPassManager->getPass<TransparentPass>())
             {
@@ -506,8 +481,6 @@ void VulkanEngine::run()
             ImGui::Text("draws %i", stats.drawcall_count);
             ImGui::End();
         }
-
-        // (Removed Camera tuning window; use mouse wheel to adjust speed or Ctrl+wheel for FOV)
 
         // Render Graph debug window
         if (ImGui::Begin("Render Graph"))
@@ -683,27 +656,6 @@ void VulkanEngine::run()
             else
             {
                 ImGui::TextUnformatted("Tonemap pass not available");
-            }
-            ImGui::End();
-        }
-
-        // Shadows window (simple shadow map)
-        if (ImGui::Begin("Shadows"))
-        {
-            if (auto *csm = _renderPassManager->getPass<CSMShadowPass>())
-            {
-                auto cfg = csm->config();
-                // Force single cascade
-                cfg.cascades = 1;
-                int mapSz = (int)cfg.mapSize;
-                if (ImGui::SliderInt("Map Size", &mapSz, 256, 4096)) { csm->set_map_size((uint32_t)mapSz); }
-                if (ImGui::SliderFloat("Max Distance", &cfg.maxDistance, 10.0f, 500.0f)) { csm->config() = cfg; }
-                if (ImGui::SliderFloat("Sample Bias", &cfg.sampleBias, 0.0f, 0.01f)) { csm->config() = cfg; }
-                ImGui::Checkbox("Visualize Shadow", &cfg.visualize); csm->config() = cfg;
-            }
-            else
-            {
-                ImGui::TextUnformatted("Shadow pass not available");
             }
             ImGui::End();
         }

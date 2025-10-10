@@ -89,7 +89,7 @@ void SceneManager::update_scene()
         return m;
     };
 
-    const float fov = glm::radians(mainCamera.fovDegrees);
+    const float fov = glm::radians(70.f);
     const float aspect = (float) _context->getSwapchain()->windowExtent().width /
                          (float) _context->getSwapchain()->windowExtent().height;
     const float nearPlane = 0.1f;

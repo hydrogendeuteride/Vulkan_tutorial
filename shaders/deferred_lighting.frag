@@ -1,7 +1,6 @@
 #version 450
 #extension GL_GOOGLE_include_directive : require
 #include "input_structures.glsl"
-#include "shadows.glsl"
 
 layout(location=0) in vec2 inUV;
 layout(location=0) out vec4 outColor;
@@ -84,17 +83,7 @@ void main(){
     float NdotL = max(dot(N, L), 0.0);
     vec3 irradiance = sceneData.sunlightColor.rgb * sceneData.sunlightColor.a * NdotL;
 
-    // Simple single shadow map
-    float visibility = sampleShadowPCF(pos, max(dot(N, L), 0.0));
-
-    // Debug visualization of shadow term
-    if (shadow.params.z > 0.5)
-    {
-        outColor = vec4(vec3(visibility), 1.0);
-        return;
-    }
-
-    vec3 color = (kD * albedo / PI + specular) * irradiance * visibility;
+    vec3 color = (kD * albedo / PI + specular) * irradiance;
     color += albedo * sceneData.ambientColor.rgb;
 
     outColor = vec4(color, 1.0);
